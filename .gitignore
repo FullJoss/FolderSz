@@ -1,0 +1,11 @@
+.vscode/
+.vs/
+FolderSz/
+x64/
+bin/
+obj/
+compiler.bat
+*.exe
+*.obj
+*.bin
+*.dat
