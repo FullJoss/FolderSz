@@ -19,6 +19,7 @@ HWND createWindow(const wchar_t *title, int width, int height, WindowDataInforma
     wc.lpszClassName = L"WINDOW_SIMPLE";
     wc.hbrBackground = window_brush;
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.hIcon = LoadIconW(hinstance, MAKEINTRESOURCEW(1));
 
     RegisterClassW(&wc);
 
