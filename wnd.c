@@ -78,7 +78,7 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
     case WM_NOTIFY:
     {
-        if (List_View_Notification(lParam))
+        if (NotifListView(lParam))
             return 0;
 
         break;

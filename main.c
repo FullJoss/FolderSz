@@ -1,6 +1,6 @@
-#include "dpi.h"
-
 #include "pch.h"
+
+#include "dpi.h"
 #include "theme.h"
 #include "wnd.h"
 #include "list_view.h"
@@ -11,22 +11,11 @@
 
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "uxtheme.lib")
-#pragma comment(lib, "dwmapi.lib") // (Celle du message précédent)
+#pragma comment(lib, "dwmapi.lib")
 
 #define NB_BUTTON 2
 
 HWND mainHwnd = NULL;
-wchar_t g_current_path[MAX_PATH] = { 0 };
-
-static void LaunchChoiceExplorer() {
-    if (create_choice_explorer(mainHwnd, g_current_path, MAX_PATH))
-    {
-        scan_filepath(g_current_path);
-        List_View_MAJ();
-    }
-    else
-        MessageBox_View(L"Aucune explorer windows ouvert");
-}
 
 int main()
 {

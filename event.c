@@ -3,6 +3,9 @@
 #include "feature.h"
 #include "list_view.h"
 #include "dialog.h"
+#include "choice_explorer.h"
+
+static wchar_t g_current_path[MAX_PATH] = { 0 };
 
 void OpenDialogFolder(void)
 {
@@ -12,7 +15,17 @@ void OpenDialogFolder(void)
 
     scan_filepath(chaine);
 
-    List_View_MAJ();
+    UpdateListView();
 
     free(chaine);
+}
+
+void LaunchChoiceExplorer(void) {
+    if (create_choice_explorer(mainHwnd, g_current_path, MAX_PATH))
+    {
+        scan_filepath(g_current_path);
+        UpdateListView();
+    }
+    else
+        MessageBox_View(L"Aucune explorer windows ouvert");
 }
