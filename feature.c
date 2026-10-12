@@ -4,11 +4,8 @@
 #include "cache.h"
 #include "dialog.h"
 
-ElementFile *list_view_data = NULL;
-int list_view_data_count = 0;
+static ListFile listFile = { NULL, 0, 0 };
 wchar_t *current_path = NULL;
-
-static int capacity = 0;
 
 LONGLONG start;
 
@@ -130,30 +127,36 @@ static BOOL filter_specific_path(const wchar_t *path)
     return FALSE; // Le dossier est valide, on peut le scanner
 }
 
-BOOL manage_max_capacity()
+static BOOL Manage_max_capacity()
 {
-    if (capacity < list_view_data_count || capacity == 0)
+    int capacity = listFile.capacity;
+    int count = listFile.count;
+
+    if (capacity < count || capacity == 0)
     {
         capacity = 2 * capacity + 1;
-        // 2. On utilise un pointeur temporaire
-        ElementFile *tmp = realloc(list_view_data, capacity * sizeof(ElementFile));
 
-        // 3. On vérifie TOUJOURS si le retour n'est pas NULL
+        ElementFile *tmp = (ElementFile *)realloc(listFile.file, capacity * sizeof(ElementFile));
+
         if (tmp == NULL)
         {
-            capacity = 0;
-            free(list_view_data); // On libère l'ancienne mémoire si ptr n'était pas NULL
+            listFile.capacity = 0;
+
+            if (listFile.file) 
+                free(listFile.file);
+
             MessageBox_View(L"Erreur : Allocation mémoire échouée !");
             return FALSE;
         }
 
-        list_view_data = tmp;
+        listFile.file = tmp;
+        listFile.capacity = capacity;
     }
     return TRUE;
 }
-void scan_filepath(const wchar_t *dossierPath)
+ListFile* ScanFilePath(const wchar_t *dossierPath)
 {
-    list_view_data_count = 0;
+    listFile.count = 0;
 
     SetWindowTextW(mainHwnd, dossierPath);
 
@@ -178,13 +181,12 @@ void scan_filepath(const wchar_t *dossierPath)
                 continue;
             }
 
-            // Augmenter la taille du tableau (malloc/realloc)
-            list_view_data_count++;
-            if (!manage_max_capacity())
+            listFile.count++;
+            if (!Manage_max_capacity())
                 break;
 
             // Stocker les données
-            ElementFile *element = &list_view_data[list_view_data_count - 1];
+            ElementFile *element = &listFile.file[listFile.count - 1];
             wcscpy_s(element->name, MAX_PATH, findData.cFileName);
 
             wchar_t cheminComplet[MAX_PATH];
@@ -216,16 +218,17 @@ void scan_filepath(const wchar_t *dossierPath)
             }
 
             SHGetFileInfoW(
-                cheminComplet, // Le chemin complet que vous avez reconstruit
+                cheminComplet,
                 findData.dwFileAttributes,
                 &sfiFile,
                 sizeof(sfiFile),
                 SHGFI_SYSICONINDEX | SHGFI_SMALLICON | SHGFI_USEFILEATTRIBUTES);
 
-            // Sauvegarder l'index trouvé dans votre tableau de données
             element->indexIcon = sfiFile.iIcon;
 
         } while (FindNextFileW(hFind, &findData));
         FindClose(hFind);
     }
+
+    return &listFile;
 }

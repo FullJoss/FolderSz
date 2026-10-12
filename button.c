@@ -1,23 +1,32 @@
 #include "button.h"
 #include "theme.h"
 
+BOOL ButtonHitTest(WPARAM wParam, int x, int y, Button* button);
+BOOL ButtonClickTest(WPARAM wParam, int x, int y, Button* button);
+void ButtonDraw(HDC hdc, Button* button);
+
+static inline void DrawBorder(HDC hdc, Button* button);
+static inline void WriteText(HDC hdc, Button* button);
+static inline void DrawBackground(HDC hdc, Button* button);
+static inline int GetButtonState(WPARAM wParam, BOOL isOver);
+
+static inline Button CreateButton(const wchar_t* name, Callback event) {
+    Button btn;
+    btn.text = name;
+    btn.state = PBS_NORMAL;
+    btn.on_click = event;
+    return btn;
+}
+
 BOOL ButtonHitTest(WPARAM wParam, int x, int y, Button *button)
 {
-    // Est-ce que la souris est dans le rectangle du bouton ?
     BOOL isOver = PtInRect(&button->bounds, (POINT){x, y});
-    int nouvelEtat = isOver ? PBS_HOT : PBS_NORMAL;
+    int newstate = GetButtonState(wParam, isOver);
 
-    // Si l'utilisateur clique et glisse en dehors
-    if (wParam & MK_LBUTTON)
+    if (newstate != button->state)
     {
-        nouvelEtat = isOver ? PBS_PRESSED : PBS_NORMAL;
-    }
-
-    // Si l'état a changé, on demande à redessiner la zone du bouton
-    if (nouvelEtat != button->state)
-    {
-        button->state = nouvelEtat;
-        InvalidateRect(mainHwnd, &button->bounds, FALSE); // Force le message WM_PAINT
+        button->state = newstate;
+        InvalidateRect(mainHwnd, &button->bounds, FALSE);
     }
 
     return isOver;
@@ -28,10 +37,10 @@ BOOL ButtonClickTest(WPARAM wParam, int x, int y, Button *button)
     if (wParam & MK_LBUTTON)
     {
         POINT p = {x, y};
+
         if (PtInRect(&button->bounds, p))
         {
             button->on_click();
-
             return TRUE;
         }
     }
@@ -40,15 +49,47 @@ BOOL ButtonClickTest(WPARAM wParam, int x, int y, Button *button)
 
 void ButtonDraw(HDC hdc, Button *button)
 {
-    FillRect(hdc, &button->bounds, get_btn_brush(button->state));
+    DrawBackground(hdc, button);
+    DrawBorder(hdc, button);
+    WriteText(hdc, button);
+}
 
-    // 3. Dessiner la bordure fine du bouton
-    FrameRect(hdc, &button->bounds, get_btn_brush_border());
+static inline void WriteText(HDC hdc, Button* button) {
+    SetTextColor(hdc, g_colors[IC_TEXT]);
+    SetBkMode(hdc, TRANSPARENT);
 
-    // 4. Dessiner le texte net (avec votre police Segoe UI)
-    SetTextColor(hdc, get_btn_color_text());
-    SetBkMode(hdc, TRANSPARENT); // Évite un carré blanc derrière les lettres
+    DrawTextW(hdc, button->text, -1, (RECT*)&button->bounds, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+}
 
-    DrawTextW(hdc, button->text, -1, (RECT *)&button->bounds,
-              DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+static inline void DrawBorder(HDC hdc, Button* button) {
+    int index = (button->state == PBS_HOT) ? IC_BTN_HOVER_BORDER : IC_BTN_BORDER;
+    FrameRect(hdc, &button->bounds, g_brushs[index]);
+}
+
+static inline void DrawBackground(HDC hdc, Button* button) {
+    ColorIndex index = ButonStateToIndexColor(button->state);
+    FillRect(hdc, &button->bounds, g_brushs[index]);
+}
+
+static inline int GetButtonState(WPARAM wParam, BOOL isOver) {
+    int newstate = isOver ? PBS_HOT : PBS_NORMAL;
+
+    BOOL isLeftPressed = (wParam & MK_LBUTTON);
+    if (isLeftPressed)
+    {
+        newstate = isOver ? PBS_PRESSED : PBS_NORMAL;
+    }
+
+    return newstate;
+}
+
+static inline ColorIndex ButonStateToIndexColor(int state) {
+    switch (state) {
+    case PBS_PRESSED:
+        return IC_BTN_CLICK;
+    case PBS_HOT:
+        return IC_BTN_HOVER;
+    default:
+        return PBS_NORMAL;
+    }
 }

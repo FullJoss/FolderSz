@@ -2,26 +2,22 @@
 
 #include "pch.h"
 
-extern COLORREF btn_colors[5];
-extern HBRUSH btn_brushs[4];
-extern HBRUSH window_brush;
+typedef enum {
+    IC_WINDOW_COLOR,
+    IC_BTN_BACKGROUND,
+    IC_BTN_HOVER,
+    IC_BTN_CLICK,
+    IC_BTN_BORDER,
+    IC_BTN_HOVER_BORDER,
+    IC_TEXT,
+    IC_COUNT
+} ColorIndex;
+
+extern COLORREF g_colors[IC_COUNT];
+extern HBRUSH g_brushs[IC_COUNT];
 extern HFONT g_font;
 
-void init_theme();
-void close_theme();
-void set_listview_theme(HWND);
-void ActiverDarkModeUltra(HWND hWnd);
-
-static inline HBRUSH get_btn_brush(int state)
-{
-    return btn_brushs[state - 1];
-}
-static inline HBRUSH get_btn_brush_border()
-{
-    return btn_brushs[3];
-}
-
-static inline COLORREF get_btn_color_text()
-{
-    return btn_colors[4];
-}
+void InitTheme();
+void FreeTheme();
+void SetListViewTheme(HWND);
+void SetTitleWindowTheme(HWND hWnd);

@@ -1,50 +1,78 @@
 #include "theme.h"
 
-COLORREF btn_colors[5] = {
-    // lightmode
-    RGB(245, 245, 245), // Background
-    RGB(230, 230, 230), // hover
-    RGB(200, 200, 200), // click
-    RGB(180, 180, 180), // border
-    RGB(0, 0, 0)        // Text
-};
-
-HBRUSH btn_brushs[4] = {0};
-HBRUSH window_brush;
+COLORREF g_colors[IC_COUNT] = { 0 };
+HBRUSH g_brushs[IC_COUNT] = { 0 };
 HFONT g_font;
 
-BOOL is_dark_mode = FALSE;
+BOOL isDarkMode = FALSE;
 
-static HFONT CreateSegoeUI(int size)
+static inline void FillVarColorDark() {
+    g_colors[IC_WINDOW_COLOR] = RGB(15, 15, 15);
+
+    g_colors[IC_BTN_BACKGROUND] = RGB(30, 30, 30);
+    g_colors[IC_BTN_HOVER] = RGB(45, 45, 45);
+    g_colors[IC_BTN_CLICK] = RGB(60, 60, 60);
+    g_colors[IC_BTN_BORDER] = RGB(85, 85, 85);
+    g_colors[IC_BTN_HOVER_BORDER] = RGB(220, 220, 220);
+    g_colors[IC_TEXT] = RGB(255, 255, 255);
+}
+
+static inline void FillVarColorLight() {
+    g_colors[IC_WINDOW_COLOR] = RGB(248, 250, 252);
+
+    g_colors[IC_BTN_BACKGROUND] = RGB(245, 245, 245);
+    g_colors[IC_BTN_HOVER] = RGB(230, 230, 230);
+    g_colors[IC_BTN_CLICK] = RGB(200, 200, 200);
+    g_colors[IC_BTN_BORDER] = RGB(180, 180, 180);
+    g_colors[IC_BTN_HOVER_BORDER] = RGB(0, 120, 125);
+    g_colors[IC_TEXT] = RGB(0, 0, 0);
+}
+
+static inline void FillBrushWithColor() {
+    for (int i_color = 0; i_color < IC_COUNT; i_color++)
+    {
+        g_brushs[i_color] = CreateSolidBrush(g_colors[i_color]);
+    }
+}
+
+static inline void FreeBrushs() {
+    for (int i_color = 0; i_color < IC_COUNT; i_color++)
+    {
+        DeleteObject(g_brushs[i_color]);
+    }
+}
+
+static HFONT CreateCustomFont(const wchar_t* fontName, int size, int weight, BOOL useItalic)
 {
-    HDC hdc = GetDC(NULL);                     // Récupère le contexte de l'écran pour obtenir le DPI
-    int dpiY = GetDeviceCaps(hdc, LOGPIXELSY); // Généralement 96 sur un écran classique (100%)
+    HDC hdc = GetDC(NULL);                     
+    int dpiY = GetDeviceCaps(hdc, LOGPIXELSY);
     ReleaseDC(NULL, hdc);
 
-    // Conversion de 12 points en unités logiques (pixels)
     int fontHeight = -MulDiv(size, dpiY, 72);
 
     return CreateFontW(
-        fontHeight,                  // 1. nHeight : Hauteur des lettres en pixels
-        0,                           // 2. nWidth : Largeur moyenne (0 = automatique proportionnel)
-        0,                           // 3. nEscapement : Angle d'écriture (0 = horizontal)
-        0,                           // 4. nOrientation : Angle des caractères
-        FW_MEDIUM,                   // 5. fnWeight : Épaisseur (FW_LIGHT, FW_NORMAL, FW_SEMIBOLD, FW_BOLD)
-        FALSE,                       // 6. fdwItalic : Italique (TRUE/FALSE)
-        FALSE,                       // 7. fdwUnderline : Souligné (TRUE/FALSE)
-        FALSE,                       // 8. fdwStrikeOut : Barré (TRUE/FALSE)
-        DEFAULT_CHARSET,             // 9. fdwCharSet : Jeu de caractères
-        OUT_DEFAULT_PRECIS,          // 10. fdwOutputPrecision : Précision de sortie
-        CLIP_DEFAULT_PRECIS,         // 11. fdwClipPrecision : Précision de découpage
-        CLEARTYPE_QUALITY,           // 12. fdwQuality : LE SECRET DU REFLÈTEMENT NET (Force l'antialiasing ClearType)
-        DEFAULT_PITCH | FF_DONTCARE, // 13. fdwPitchAndFamily : Type de espacement
-        L"Segoe UI"                  // 14. lpszFace : Le nom de la police système
+        fontHeight,                 
+        0,                           
+        0,                          
+        0,                          
+        weight,                  
+        useItalic,                    
+        FALSE,                       
+        FALSE,                      
+        DEFAULT_CHARSET,            
+        OUT_DEFAULT_PRECIS,         
+        CLIP_DEFAULT_PRECIS,        
+        CLEARTYPE_QUALITY,          
+        DEFAULT_PITCH | FF_DONTCARE,
+        fontName
     );
 }
-static int isDarkMode()
+
+static BOOL IsDarkMode()
 {
+    DWORD value = 1;
+
     HKEY hKey;
-    DWORD value = 1; // Par défaut, mode clair si la clé n'existe pas
     DWORD size = sizeof(value);
 
     if (RegOpenKeyExW(HKEY_CURRENT_USER,
@@ -55,77 +83,58 @@ static int isDarkMode()
         RegQueryValueExW(hKey, L"AppsUseLightTheme", NULL, NULL, (LPBYTE)&value, &size);
         RegCloseKey(hKey);
     }
-    return (value == 0); // Si AppsUseLightTheme vaut 0, le mode sombre est activé
+    return (value == 0);
 }
-void init_theme()
+
+void InitTheme()
 {
-    window_brush = (HBRUSH)(COLOR_WINDOW + 1);
-    if ((is_dark_mode = isDarkMode()))
-    {
-        // darkmode
-        btn_colors[0] = RGB(30, 30, 30);    // Background
-        btn_colors[1] = RGB(45, 45, 45);    // hover
-        btn_colors[2] = RGB(60, 60, 60);    // click
-        btn_colors[3] = RGB(85, 85, 85);    // border
-        btn_colors[4] = RGB(255, 255, 255); // Text
+    g_font = CreateCustomFont(L"Segoe UI", 9, FW_MEDIUM, FALSE);
 
-        window_brush = CreateSolidBrush(btn_colors[0]);
+    if ((isDarkMode = IsDarkMode()))
+    {
+        FillVarColorDark();
+    }
+    else {
+        FillVarColorLight();
     }
 
-    for (int i = 0; i < 4; i++)
-    {
-        btn_brushs[i] = CreateSolidBrush(btn_colors[i]);
-    }
-
-    g_font = CreateSegoeUI(9);
+    FillBrushWithColor();
 }
-void close_theme()
+
+void FreeTheme()
 {
     DeleteObject(g_font);
-
-    for (int i = 0; i < 4; i++)
-    {
-        DeleteObject(btn_brushs[i]);
-    }
-
-    if (is_dark_mode)
-        DeleteObject(window_brush);
+    FreeBrushs();
 }
 
-void set_listview_theme(HWND mhwnd)
+void SetListViewTheme(HWND hwnd)
 {
-    COLORREF bg_color = is_dark_mode ? RGB(32, 32, 32) : RGB(240, 240, 240);
+    ListView_SetBkColor(hwnd, g_colors[IC_WINDOW_COLOR]);
+    ListView_SetTextBkColor(hwnd, g_colors[IC_WINDOW_COLOR]);
+    ListView_SetTextColor(hwnd, g_colors[IC_TEXT]);
 
-    ListView_SetBkColor(mhwnd, bg_color);        // Couleur de fond générale
-    ListView_SetTextBkColor(mhwnd, bg_color);    // Couleur de fond derrière le texte
-    ListView_SetTextColor(mhwnd, btn_colors[4]); // Couleur du texte
-
-    if (is_dark_mode)
+    if (isDarkMode)
     {
-        // 1. Récupérer le HWND de l'en-tête de la ListView
-        HWND hWndHeader = (HWND)SendMessage(mhwnd, LVM_GETHEADER, 0, 0);
+        HWND hWndHeader = (HWND)SendMessage(hwnd, LVM_GETHEADER, 0, 0);
 
         if (hWndHeader != NULL) {
-            // 2. Lui appliquer le thème sombre natif pour les listes sous Windows 10/11
             SetWindowTheme(hWndHeader, L"DarkMode_ItemsView", NULL);
         }
-
-        SetWindowTheme(mhwnd, L"DarkMode_Explorer", NULL);
+        SetWindowTheme(hwnd, L"DarkMode_Explorer", NULL);
     }
 }
 
+void SetTitleWindowTheme(HWND hWnd) {
 
-void ActiverDarkModeUltra(HWND hWnd) {
+    const int DW_NEW_ATTRIB_WIN10_WIN11 = 20;
+    HRESULT hr = DwmSetWindowAttribute(hWnd, DW_NEW_ATTRIB_WIN10_WIN11, &isDarkMode, sizeof(BOOL));
 
-    // 1. Essai avec la constante moderne officielle (Windows 11 et Win 10 récents -> valeur 20)
-    HRESULT hr = DwmSetWindowAttribute(hWnd, 20, &is_dark_mode, sizeof(BOOL));
-
-    // 2. Si ça échoue, essai avec l'ancienne constante masquée (Anciens Windows 10 -> valeur 19)
     if (FAILED(hr)) {
-        DwmSetWindowAttribute(hWnd, 19, &is_dark_mode, sizeof(BOOL));
+        const int DW_OLD_ATTRIB_WIN7_WIN10 = 19;
+        DwmSetWindowAttribute(hWnd, DW_OLD_ATTRIB_WIN7_WIN10, &isDarkMode, sizeof(BOOL));
     }
 
-    // 3. Forcer Windows à redessiner immédiatement le cadre de la fenêtre (Résout 90% des "ça marche pas")
+    // Update Display
     SetWindowPos(hWnd, NULL, 0, 0, 0, 0,
         SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
 }

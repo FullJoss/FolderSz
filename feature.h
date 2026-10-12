@@ -17,15 +17,19 @@ typedef struct
     int indexIcon;
 } ElementFile;
 
+typedef struct {
+    ElementFile* file;
+    unsigned int count;
+    unsigned int capacity;
+} ListFile;
+
 #define MAX_LISTVIEW_ELEMENT
 
-extern ElementFile *list_view_data;
-extern int list_view_data_count;
 extern wchar_t *current_path;
 
 wchar_t *load_folder();
 int rename_file(const wchar_t *ancienChemin, const wchar_t *nouveauNom);
-void scan_filepath(const wchar_t *dossierPath);
+ListFile* ScanFilePath(const wchar_t *dossierPath);
 
 static inline void AddFlagsElement(ElementFile *element, ElementFlags flag)
 {

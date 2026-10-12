@@ -19,13 +19,14 @@ HWND mainHwnd = NULL;
 
 int main()
 {
-    ForcerFenetreNetteParLeCode();
+    ForceSharpWindowViaCode();
 
-    init_theme();
-
-    int window_width = 500;
+    InitTheme();
 
     Button buttons[NB_BUTTON];
+
+    int window_width = 500;
+    int window_height = 600;
 
     int accx = 10;
     int accy = 10;
@@ -46,17 +47,19 @@ int main()
     buttons[1].on_click = LaunchChoiceExplorer;
 
     WindowDataInformation info;
-    info.btnHead = buttons;
+    info.btnsHead = buttons;
     info.n_buttons = NB_BUTTON;
 
-    mainHwnd = createWindow(L"JossFileSize", window_width, 600, &info);
-    ActiverDarkModeUltra(mainHwnd);
+    mainHwnd = CreateMainWindow(L"JossFileSize", window_width, window_height, &info);
+    SetTitleWindowTheme(mainHwnd);
 
-    init_list_view(10, 60, window_width - 30, 500);
+    CreateListView(10, 60, window_width - 30, 500);
+
     LaunchChoiceExplorer();
-    launchWindow(mainHwnd);
 
-    close_theme();
+    int result_code = LaunchWindow(mainHwnd);
 
-    return 0;
+    FreeTheme();
+
+    return result_code;
 }

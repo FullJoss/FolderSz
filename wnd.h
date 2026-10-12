@@ -4,11 +4,9 @@
 
 typedef struct
 {
-    Button *btnHead;
+    Button *btnsHead;
     int n_buttons;
 } WindowDataInformation;
 
-HWND createWindow(const wchar_t *title, int width, int height, WindowDataInformation *info);
-LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-int launchWindow(HWND hwnd);
-void OnPaint();
+HWND CreateMainWindow(const wchar_t *title, int width, int height, WindowDataInformation *info);
+int LaunchWindow(HWND hwnd);

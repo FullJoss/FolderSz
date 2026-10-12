@@ -2,7 +2,7 @@
 
 #include <windows.h>
 
-// Définitions pour les anciens compilateurs
+// Definitions for older compilers
 typedef enum
 {
     PROCESS_DPI_UNAWARE = 0,
@@ -12,9 +12,9 @@ typedef enum
 
 typedef HRESULT(WINAPI *SetProcessDpiAwarenessProc)(PROCESS_DPI_AWARENESS);
 
-void ForcerFenetreNetteParLeCode(void)
+void ForceSharpWindowViaCode(void)
 {
-    // 1. Tenter la méthode Windows 8.1 / 10 (Per-Monitor)
+    // Per-Monitor Method
     HMODULE hShcore = GetModuleHandleW(L"shcore.dll");
     if (!hShcore)
         hShcore = LoadLibraryW(L"shcore.dll");
@@ -25,16 +25,14 @@ void ForcerFenetreNetteParLeCode(void)
             (SetProcessDpiAwarenessProc)GetProcAddress(hShcore, "SetProcessDpiAwareness");
         if (pSetDpi)
         {
-            // 2 = PROCESS_PER_MONITOR_DPI_AWARE
             if (SUCCEEDED(pSetDpi(PROCESS_PER_MONITOR_DPI_AWARE)))
             {
-                return; // Succès !
+                return;
             }
         }
     }
 
-    // 2. Solution de secours Windows Vista / 7 / 8 (System Aware)
-    // Moins parfaite sur le multi-écran, mais supprime le flou à 100% sur l'écran principal
+    // SystemAware Method
     HMODULE hUser32 = GetModuleHandleW(L"user32.dll");
     if (hUser32)
     {

@@ -208,7 +208,7 @@ LRESULT CALLBACK AltTabChoixProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
         HDC hdc = BeginPaint(hwnd, &ps);
 
         // Dessiner le titre de la fenêtre en blanc
-        SetTextColor(hdc, get_btn_color_text());
+        SetTextColor(hdc, g_colors[IC_TEXT]);
         SetBkMode(hdc, TRANSPARENT);
         SelectObject(hdc, g_font);
 
