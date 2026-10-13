@@ -127,6 +127,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="backend.c" />
     <ClCompile Include="button.c" />
     <ClCompile Include="cache.c" />
     <ClCompile Include="choice_explorer.c" />
@@ -140,6 +141,7 @@
     <ClCompile Include="wnd.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="backend.h" />
     <ClInclude Include="button.h" />
     <ClInclude Include="cache.h" />
     <ClInclude Include="choice_explorer.h" />

@@ -1,3 +1,4 @@
+#pragma once
 #include "pch.h"
 
 typedef struct {
@@ -11,10 +12,13 @@ typedef struct
     HWND hwndExplorateur;  // Le handle (HWND) de la fenêtre Windows
     HTHUMBNAIL hThumbnail; // L'identifiant de flux vidéo généré par le DWM
     HWND hwndPlaceholder;
-} ExplorateurOuvert;
+} ExplorerInfo;
 
-void fill_g_Explorers();
+typedef enum {
+    SEARCH_RESULT_NONE,
+    SEARCH_RESULT_UNIQUE,
+    SEARCH_RESULT_MULTIPLE
+} SearchResult;
 
-BOOL create_choice_explorer(HWND hwndParent, wchar_t *outPath, DWORD maxLen);
-LRESULT CALLBACK VignetteSubclassProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+SearchResult CreateChoiceExplorer(HWND hwndParent, wchar_t *outPath, DWORD maxLen);
 LRESULT CALLBACK AltTabChoixProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);

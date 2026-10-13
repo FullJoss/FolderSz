@@ -21,7 +21,7 @@ void OpenDialogFolder(void)
 
 void LaunchChoiceExplorer(void) {
 
-    if (create_choice_explorer(mainHwnd, m_current_path, MAX_PATH))
+    if (CreateChoiceExplorer(mainHwnd, m_current_path, MAX_PATH))
     {
         ListFile* lf = ScanFilePath(m_current_path);
         UpdateListView(lf);

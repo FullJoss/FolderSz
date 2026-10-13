@@ -4,10 +4,12 @@ COLORREF g_colors[IC_COUNT] = { 0 };
 HBRUSH g_brushs[IC_COUNT] = { 0 };
 HFONT g_font;
 
+HPEN CONST_PEN_SELECTION = NULL;
+
 BOOL isDarkMode = FALSE;
 
 static inline void FillVarColorDark() {
-    g_colors[IC_WINDOW_COLOR] = RGB(15, 15, 15);
+    g_colors[IC_WINDOW_COLOR] = RGB(25, 25, 25);
 
     g_colors[IC_BTN_BACKGROUND] = RGB(30, 30, 30);
     g_colors[IC_BTN_HOVER] = RGB(45, 45, 45);
@@ -98,12 +100,15 @@ void InitTheme()
         FillVarColorLight();
     }
 
+    CONST_PEN_SELECTION = CreatePen(PS_SOLID, 3, RGB(0, 120, 225));
+
     FillBrushWithColor();
 }
 
 void FreeTheme()
 {
     DeleteObject(g_font);
+    DeleteObject(CONST_PEN_SELECTION);
     FreeBrushs();
 }
 

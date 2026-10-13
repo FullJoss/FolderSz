@@ -15,4 +15,4 @@ BOOL ButtonClickTest(WPARAM wParam, int x, int y, Button *button);
 
 void ButtonDraw(HDC hdc, Button *button);
 
-static inline Button CreateButton(const wchar_t* name, Callback event);
+Button CreateButton(const wchar_t* name, Callback event);

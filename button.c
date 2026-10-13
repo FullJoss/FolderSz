@@ -9,9 +9,10 @@ static inline void DrawBorder(HDC hdc, Button* button);
 static inline void WriteText(HDC hdc, Button* button);
 static inline void DrawBackground(HDC hdc, Button* button);
 static inline int GetButtonState(WPARAM wParam, BOOL isOver);
+static inline ColorIndex ButonStateToIndexColor(int state);
 
-static inline Button CreateButton(const wchar_t* name, Callback event) {
-    Button btn;
+Button CreateButton(const wchar_t* name, Callback event) {
+    Button btn = { 0 };
     btn.text = name;
     btn.state = PBS_NORMAL;
     btn.on_click = event;
