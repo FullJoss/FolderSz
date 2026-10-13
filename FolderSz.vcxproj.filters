@@ -51,6 +51,9 @@
     <ClCompile Include="backend.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="layout.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="feature.h">
@@ -87,6 +90,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="backend.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="layout.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

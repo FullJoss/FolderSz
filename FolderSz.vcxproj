@@ -134,6 +134,7 @@
     <ClCompile Include="dialog.c" />
     <ClCompile Include="event.c" />
     <ClCompile Include="feature.c" />
+    <ClCompile Include="layout.c" />
     <ClCompile Include="list_view.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="pch.c" />
@@ -149,6 +150,7 @@
     <ClInclude Include="dpi.h" />
     <ClInclude Include="event.h" />
     <ClInclude Include="feature.h" />
+    <ClInclude Include="layout.h" />
     <ClInclude Include="list_view.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="theme.h" />

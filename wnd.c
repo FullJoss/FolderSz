@@ -27,7 +27,7 @@ HWND CreateMainWindow(const wchar_t *title, int width, int height, WindowDataInf
     const POINT INITIAL_WINDOW_POS = { CW_USEDEFAULT , CW_USEDEFAULT };
 
     // 3. Création de la fenêtre avec CreateWindowEx
-    return CreateWindowExW(
+    HWND temp = CreateWindowExW(
         0,                           
         L"WINDOW_SIMPLE",            
         title,                      
@@ -39,6 +39,12 @@ HWND CreateMainWindow(const wchar_t *title, int width, int height, WindowDataInf
         hinstance,                  
         info                      
     );
+
+    if (!temp) return NULL;
+
+    SetTitleWindowTheme(temp);
+
+    return temp;
 }
 int LaunchWindow(HWND hwnd)
 {

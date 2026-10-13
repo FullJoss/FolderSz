@@ -6,7 +6,7 @@
 
 static Label g_labels[10];
 static ExplorerInfo g_Explorers[10];
-static int g_totalTrouve = 0;
+static int m_explorerCount = 0;
 static int g_indexSelection = -1;
 static HWND mhwnd;
 static WNDPROC g_OldStaticProc = NULL;
@@ -109,12 +109,9 @@ LRESULT CALLBACK AltTabChoixProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
     {
     case WM_CREATE:
     {
-        BOOL dark = TRUE;
-        DwmSetWindowAttribute(hwnd, 20, &dark, sizeof(dark));
-
         HINSTANCE hInst = GetModuleHandle(NULL);
 
-        for (int i = 0; i < g_totalTrouve; i++)
+        for (int i = 0; i < m_explorerCount; i++)
         {
             POINT pos = CalculateThumbnailPos(i);
 
@@ -157,7 +154,7 @@ LRESULT CALLBACK AltTabChoixProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
         GetCursorPos(&pt);
         ScreenToClient(hwnd, &pt);
 
-        for (int i = 0; i < g_totalTrouve; i++)
+        for (int i = 0; i < m_explorerCount; i++)
         {
             RECT rc;
             GetWindowRect(g_Explorers[i].hwndPlaceholder, &rc);
@@ -185,7 +182,7 @@ LRESULT CALLBACK AltTabChoixProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
     case WM_KEYDOWN:
     {
         if (wParam == VK_ESCAPE)
-        { // Quitter avec Échap
+        {
             DestroyWindow(hwnd);
         }
         break;
@@ -193,7 +190,6 @@ LRESULT CALLBACK AltTabChoixProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 
     case WM_DESTROY:
         CloseChoiceExplorer();
-        
         PostQuitMessage(0);
         break;
 
@@ -205,11 +201,11 @@ LRESULT CALLBACK AltTabChoixProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 
 SearchResult SearchOpenExplorer(wchar_t* outPath, DWORD maxLen)
 {
-    g_totalTrouve = Backend_GetOpenExplorers(g_Explorers, MAX_EXPLORERS);
-    if (g_totalTrouve == 0) {
+    m_explorerCount = Backend_GetOpenExplorers(g_Explorers, MAX_EXPLORERS);
+    if (m_explorerCount == 0) {
         return SEARCH_RESULT_NONE;
     }
-    else if (g_totalTrouve == 1) {
+    else if (m_explorerCount == 1) {
         wcsncpy_s(outPath, maxLen, g_Explorers[0].chemin, _TRUNCATE);
         return SEARCH_RESULT_UNIQUE;
     }
@@ -241,7 +237,7 @@ static inline void ShowThumbnailWindow(HWND hwndPopup, ExplorerInfo* explorer, R
 
 static inline void CloseChoiceExplorer()
 {
-    for (int i = 0; i < g_totalTrouve; i++)
+    for (int i = 0; i < m_explorerCount; i++)
     {
         if (g_Explorers[i].hThumbnail != NULL)
         {
@@ -271,9 +267,10 @@ static inline POINT CalculateThumbnailPos(int index) {
 
     return (POINT) { x, y };
 }
+
 static inline RECT CalculateWindowRect() {
-    int colonnes = (g_totalTrouve > COLUMN_MAX) ? COLUMN_MAX : g_totalTrouve;
-    int lignes = (g_totalTrouve + 2) / COLUMN_MAX;
+    int colonnes = (m_explorerCount > COLUMN_MAX) ? COLUMN_MAX : m_explorerCount;
+    int lignes = (m_explorerCount + 2) / COLUMN_MAX;
 
     int winW = MARGIN + colonnes * (THUMBNAIL_WIDTH + THUMBNAIL_GAP);
     int winH = MARGIN + lignes * (THUMBNAIL_HEIGHT + THUMBNAIL_GAP);

@@ -8,12 +8,15 @@
 #include "dialog.h"
 #include "feature.h"
 #include "event.h"
+#include "layout.h"
 
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "uxtheme.lib")
 #pragma comment(lib, "dwmapi.lib")
 
 #define NB_BUTTON 2
+#define WIN_WIDTH 500
+#define WIN_HEIGHT 600
 
 HWND mainHwnd = NULL;
 
@@ -24,38 +27,23 @@ int main()
     InitTheme();
 
     Button buttons[NB_BUTTON];
+    WindowDataInformation info = { buttons, NB_BUTTON };
     buttons[0] = CreateButton(L"Open a file", OpenDialogFolder);
     buttons[1] = CreateButton(L"Resynchronize with Explorer", LaunchChoiceExplorer);
+    mainHwnd = CreateMainWindow(L"JossFileSize", WIN_WIDTH, WIN_HEIGHT, &info);
 
-    int window_width = 500;
-    int window_height = 600;
-
-    int accx = 10;
-    int accy = 10;
-    int accwidth = 150;
-    int accheight = 38;
-
-    buttons[0].bounds = (RECT){accx, accy, accx + accwidth, accy + accheight};
-
-    accx += accwidth + 10;
-    accwidth = window_width - accx - 40;
-
-    buttons[1].bounds = (RECT){accx, accy, accx + accwidth, accy + accheight};
-
-    WindowDataInformation info;
-    info.btnsHead = buttons;
-    info.n_buttons = NB_BUTTON;
-
-    mainHwnd = CreateMainWindow(L"JossFileSize", window_width, window_height, &info);
-    SetTitleWindowTheme(mainHwnd);
-
-    CreateListView(10, 60, window_width - 30, 500);
+    SetY(10);
+    SetMargin(10);
+    buttons[0].bounds = GetNextBounds(150, 38, TRUE);
+    buttons[1].bounds = GetFinalBounds(WIN_WIDTH, 38, TRUE);
+  
+    CreateListView(10, 60, WIN_WIDTH - 30, 500);
 
     LaunchChoiceExplorer();
 
-    int result_code = LaunchWindow(mainHwnd);
+    int code = LaunchWindow(mainHwnd);
 
     FreeTheme();
 
-    return result_code;
+    return code;
 }
