@@ -10,6 +10,7 @@ static int m_explorerCount = 0;
 static int g_indexSelection = -1;
 static HWND mhwnd;
 static WNDPROC g_OldStaticProc = NULL;
+static BOOL m_thumbnail_hover = FALSE;
 
 #define ID_LISTCHOIX 205
 #define MAX_EXPLORERS 10
@@ -90,6 +91,7 @@ static LRESULT CALLBACK ThumbnailSubclassProc(HWND hwnd, UINT msg, WPARAM wParam
     case WM_MOUSELEAVE:
     {
         InvalidateRect(hwndParent, NULL, TRUE);
+        m_thumbnail_hover = FALSE;
         break;
     }
     case WM_LBUTTONDBLCLK:
@@ -131,7 +133,7 @@ LRESULT CALLBACK AltTabChoixProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 
             AttachThumbnailProc(hwndPlace);
 
-            RECT rcDest = { pos.x, pos.y, pos.x + THUMBNAIL_WIDTH, pos.y + THUMBNAIL_HEIGHT };
+            RECT rcDest = { pos.x, pos.y, pos.x + THUMBNAIL_WIDTH + 2, pos.y + THUMBNAIL_HEIGHT+4 };
 
             ShowThumbnailWindow(hwnd, g_Explorers+i, rcDest);
         }
@@ -300,13 +302,17 @@ static inline void AttachThumbnailProc(HWND thumbnail) {
 }
 
 static inline void OnThumbnailMouseMove(HWND hwnd, HWND parent) {
-    TRACKMOUSEEVENT tme;
-    tme.cbSize = sizeof(TRACKMOUSEEVENT);
-    tme.dwFlags = TME_LEAVE;
-    tme.hwndTrack = hwnd;
-    TrackMouseEvent(&tme);
+    if (!m_thumbnail_hover) {
+        TRACKMOUSEEVENT tme;
+        tme.cbSize = sizeof(TRACKMOUSEEVENT);
+        tme.dwFlags = TME_LEAVE;
+        tme.hwndTrack = hwnd;
+        TrackMouseEvent(&tme);
+    
+        InvalidateRect(parent, NULL, TRUE);
 
-    InvalidateRect(parent, NULL, FALSE);
+        m_thumbnail_hover = TRUE;
+    }
 }
 
 static inline void CopyNamePath(wchar_t* destName, wchar_t* sourcePath) {

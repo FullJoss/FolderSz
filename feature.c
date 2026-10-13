@@ -7,112 +7,67 @@
 static ListFile listFile = { NULL, 0, 0 };
 wchar_t *current_path = NULL;
 
-LONGLONG start;
+
+static inline wchar_t* ExctractFilePath(IShellItem* pItem) {
+    PWSTR pszFolderPath = NULL;
+    wchar_t* value = NULL;
+    // 7. Extraire le chemin d'accès sous forme de chaîne de caractères
+    HRESULT hr = pItem->lpVtbl->GetDisplayName(pItem, SIGDN_FILESYSPATH, &pszFolderPath);
+    if (SUCCEEDED(hr))
+    {
+        value = _wcsdup(pszFolderPath);
+        CoTaskMemFree(pszFolderPath);
+    }
+    pItem->lpVtbl->Release(pItem);
+
+    return value;
+}
+
+static inline IShellItem* DeployDialogSelector(IFileOpenDialog* pDlg) {
+    DWORD dwOptions;
+    pDlg->lpVtbl->GetOptions(pDlg, &dwOptions);
+    pDlg->lpVtbl->SetOptions(pDlg, dwOptions | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM);
+    HRESULT hr = pDlg->lpVtbl->Show(pDlg, mainHwnd);
+
+    IShellItem* pItem = NULL;
+    if (SUCCEEDED(hr))
+    {
+        hr = pDlg->lpVtbl->GetResult(pDlg, &pItem);
+    }
+    return pItem;
+}
 
 wchar_t *load_folder()
 {
     wchar_t *value = NULL;
-    // 1. Initialiser la bibliothèque COM (obligatoire)
+
     HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
 
     if (SUCCEEDED(hr))
     {
         IFileOpenDialog *pDlg = NULL;
 
-        // 2. Créer l'instance du sélecteur de fichier
         hr = CoCreateInstance(&CLSID_FileOpenDialog, NULL, CLSCTX_INPROC_SERVER,
                               &IID_IFileOpenDialog, (void **)&pDlg);
 
         if (SUCCEEDED(hr))
         {
-            DWORD dwOptions;
-            // 3. Récupérer les options actuelles du dialogue
-            pDlg->lpVtbl->GetOptions(pDlg, &dwOptions);
-
-            // 4. ACTIVER LE MODE SÉLECTEUR DE DOSSIER (FOS_PICKFOLDERS)
-            pDlg->lpVtbl->SetOptions(pDlg, dwOptions | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM);
-
-            // 5. Afficher la boîte de dialogue
-            hr = pDlg->lpVtbl->Show(pDlg, mainHwnd);
-
-            if (SUCCEEDED(hr))
+            IShellItem* pItem = DeployDialogSelector(pDlg);
+            if (pItem)
             {
-                IShellItem *pItem = NULL;
-                // 6. Récupérer le dossier sélectionné par l'utilisateur
-                hr = pDlg->lpVtbl->GetResult(pDlg, &pItem);
-
-                if (SUCCEEDED(hr))
-                {
-                    PWSTR pszFolderPath = NULL;
-                    // 7. Extraire le chemin d'accès sous forme de chaîne de caractères
-                    hr = pItem->lpVtbl->GetDisplayName(pItem, SIGDN_FILESYSPATH, &pszFolderPath);
-                    if (SUCCEEDED(hr))
-                    {
-                        value = _wcsdup(pszFolderPath);
-                        CoTaskMemFree(pszFolderPath);
-                    }
-                    pItem->lpVtbl->Release(pItem);
-                }
+                value = ExctractFilePath(pItem);
             }
             pDlg->lpVtbl->Release(pDlg);
         }
-        // 8. Libérer la bibliothèque COM à la fin
+
         CoUninitialize();
     }
 
     return value;
 }
 
-int rename_file(const wchar_t *ancienChemin, const wchar_t *nouveauNom)
+static BOOL FilterSpecificPath(const wchar_t *path)
 {
-    if (!ancienChemin || ancienChemin[0] == L'\0' || !nouveauNom)
-    {
-        return 0; // Échec contrôlé (retourne faux)
-    }
-
-    // 1. Trouver le dernier antislash (\) pour isoler le dossier parent
-    const wchar_t *dernierSlash = wcsrchr(ancienChemin, L'\\');
-    if (!dernierSlash)
-    {
-        return -1; // Pas d'antislash trouvé = chemin invalide
-    }
-
-    // 2. Calculer le nombre exact de CARACTÈRES du chemin parent (incluant le '\')
-    size_t nbCaracteresParent = dernierSlash - ancienChemin + 1;
-
-    // 3. Calculer la taille du nouveau nom
-    size_t nbCaracteresNouveauNom = wcslen(nouveauNom);
-
-    // 4. Allouer la mémoire (Nombre de caractères total + 1 pour le '\0' final)
-    size_t nbTotalCaracteres = nbCaracteresParent + nbCaracteresNouveauNom + 1;
-
-    wchar_t *nouveauChemin = (wchar_t *)malloc(nbTotalCaracteres * sizeof(wchar_t));
-    if (!nouveauChemin)
-        return -1; // Échec du malloc
-
-    // 5. Copier la partie parente (ex: "C:\Dossier\")
-    wcsncpy_s(nouveauChemin, wcslen(ancienChemin), ancienChemin, nbCaracteresParent);
-
-    // 6. Ajouter le '\0' manuellement pour que wcscat sache où se coller
-    nouveauChemin[nbCaracteresParent] = L'\0';
-
-    // 7. Coller le nouveau nom à la suite
-    wcscat_s(nouveauChemin, nbCaracteresNouveauNom, nouveauNom);
-
-    // 8. Renommer le dossier via l'API standard
-    int resultat = MoveFileW(ancienChemin, nouveauChemin);
-
-    // 9. Toujours libérer la mémoire allouée
-    free(nouveauChemin);
-
-    return (resultat == 1); // Retourne 0 en cas de succès
-}
-
-// Fonction pour déterminer si un dossier doit être ignoré
-static BOOL filter_specific_path(const wchar_t *path)
-{
-    // 2. Filtres "en dur" des dossiers extrêmement lourds ou inaccessibles
-    // _wcsicmp compare sans gérer la casse (insensible aux majuscules/minuscules)
     if (_wcsicmp(path, L"C:\\Windows") == 0)
         return TRUE;
     if (_wcsicmp(path, L"C:\\Program Files") == 0)
@@ -122,9 +77,9 @@ static BOOL filter_specific_path(const wchar_t *path)
     if (_wcsicmp(path, L"C:\\ProgramData") == 0)
         return TRUE;
     if (_wcsicmp(path, L"C:\\$Recycle.Bin") == 0)
-        return TRUE; // Corbeille
+        return TRUE;
 
-    return FALSE; // Le dossier est valide, on peut le scanner
+    return FALSE;
 }
 
 static BOOL Manage_max_capacity()
@@ -194,7 +149,7 @@ ListFile* ScanFilePath(const wchar_t *dossierPath)
 
             DWORD filterMask = FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM;
 
-            if (filter_specific_path(cheminComplet) || (findData.dwFileAttributes & filterMask) == filterMask)
+            if (FilterSpecificPath(cheminComplet) || (findData.dwFileAttributes & filterMask) == filterMask)
             {
                 AddFlagsElement(element, ElementSystem);
 
