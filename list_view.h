@@ -10,10 +10,18 @@ typedef enum {
 } ColumnListView;
 
 typedef struct {
+    RECT bounds;
     HWND hwnd;
     ListFile* data;
-    RECT bounds;
+    int scrollPos;
+    int dragYOffset;
+    BOOL isDraggingScroll;  // True si l'utilisateur maintient le clic sur le curseur
 } ListFileView;
 
 void DrawListFileView(HDC hdc, ListFileView* lfv);
+RECT GetScrollThumbRect(ListFileView* listView);
+void HandleListViewLButtonUp(HWND hWnd, ListFileView* listView);
+void HandleListViewMouseMove(HWND hWnd, int x, int y, ListFileView* listView);
+void HandleListViewLButtonDown(HWND hWnd, int x, int y, ListFileView* listView);
+void HandleListViewMouseWheel(HWND hWnd, int wheelDelta, LPARAM lParam, ListFileView* listView);
 void UpdateListFileView(ListFileView* lfv);

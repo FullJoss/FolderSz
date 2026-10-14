@@ -75,6 +75,8 @@ static inline int OnMouseMove(WPARAM wParam, LPARAM lParam, WindowDataInformatio
     int xPos = GET_X_LPARAM(lParam);
     int yPos = GET_Y_LPARAM(lParam);
 
+    HandleListViewMouseMove(mainHwnd, xPos, yPos, window_info->lfv);
+
     int r = 1;
     for (int i = 0; i < window_info->n_buttons; i++)
     {
@@ -87,6 +89,8 @@ static inline int OnMouseMove(WPARAM wParam, LPARAM lParam, WindowDataInformatio
 static inline int OnLeftButtonDown(WPARAM wParam, LPARAM lParam, WindowDataInformation* window_info) {
     int xPos = GET_X_LPARAM(lParam);
     int yPos = GET_Y_LPARAM(lParam);
+
+    HandleListViewLButtonDown(mainHwnd, xPos, yPos, window_info->lfv);
 
     for (int i = 0; i < window_info->n_buttons; i++)
     {
@@ -163,11 +167,24 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         break;
     }
 
+    case WM_MOUSEWHEEL:
+    {
+        int wheelDelta = GET_WHEEL_DELTA_WPARAM(wParam);
+        HandleListViewMouseWheel(hwnd, wheelDelta, lParam, window_info->lfv);
+        break;
+    }
+
     case WM_LBUTTONDOWN:
     {
         if (OnLeftButtonDown(wParam, lParam, window_info) == 0)
             return 0;
 
+        break;
+    }
+
+    case WM_LBUTTONUP:
+    {
+        HandleListViewLButtonUp(hwnd, window_info->lfv);
         break;
     }
 

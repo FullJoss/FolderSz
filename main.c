@@ -37,7 +37,7 @@ int main()
     buttons[1].bounds = GetFinalBounds(WIN_WIDTH, 38, TRUE);
   
     int y = 38 + 10 + 10;
-    ListFileView lfv;
+    ListFileView lfv = { 0 };
     lfv.bounds = (RECT){ 10, y, WIN_WIDTH - 10, WIN_HEIGHT - 10 };
     lfv.hwnd = mainHwnd;
     lfv.data = LaunchChoiceExplorer();
