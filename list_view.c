@@ -3,6 +3,7 @@
 #include "theme.h"
 #include "dialog.h"
 
+#define CLAMP(val, vmin, vmax) ( ((val) < (vmin)) ? (vmin) : (((val) > (vmax)) ? (vmax) : (val)) )
 #define ROW_HEIGHT          26
 #define COLUMN_0_WIDTH      300
 #define ICON_SIZE           16
@@ -10,28 +11,27 @@
 #define TEXT_PADDING        10
 #define SCROLLBAR_WIDTH     14
 #define VERT_ITEM_SPACE     2
-
-BOOL g_TriCroissant = TRUE;
-ColumnListView g_sortColumn = COLUMN_LISTVIEW_NAME;
+#define MIN_THUMB_HEIGHT    20
 
 static wchar_t sizeBuffer[32];
 static HWND m_hwnd = NULL;
 static ListFile* m_list;
 
-
+static inline void DrawScrollBar(HDC hdc, ListFileView* __restrict lfv, int viewHeight, int totalContentHeight);
 static inline void DrawItem(HDC hdc, ElementFile* __restrict file, RECT rowBounds, RECT itemsArea);
 static inline void DrawColumnImageList(HDC hdc, int indexIcon, int paddingLeft, RECT rowBounds, RECT itemsArea);
 static inline void DrawColumnText(HDC hdc, const wchar_t* __restrict text, RECT textBounds);
-static inline RECT GetNextRowBounds(int i, int scrollPos, RECT area);
+static inline RECT GetNextRowBounds(int i, int scrollPos, const RECT area);
 static inline RECT GetNextTextBounds(int x, int row, RECT rowBounds, RECT itemsArea);
-static int CompareByName(const void* a, const void* b);
-static int CompareBySize(const void* a, const void* b);
-static inline void ChangeSortingMethod(ColumnListView clickedColumn);
-static inline int CompareByDirectory(ElementFile* A, ElementFile* B);
-static inline void SortAt(ColumnListView clickedColumn);
-
-RECT GetScrollThumbRect(ListFileView* listView);
-
+static inline int GetHoverIndex(HWND hWnd, int ymouse, ListFileView* lfv);
+static inline void InvalidatePairItem(HWND hwnd, RECT bounds, int scrollPos, int i1, int i2);
+static inline POINT GetIndexRange(ListFileView* __restrict lfv, RECT rcPaint);
+static inline void CalculateClipRegion(ListFileView* lfv);
+static inline void CalculateItemsArea(ListFileView* lfv);
+static inline void CalculateTrackThumb(ListFileView* lfv);
+static inline RECT GetThumbRect(ListFileView* lfv, int viewHeight, int totalContentHeight);
+static inline void SortListFileView(ListFileView* lfv);
+static inline void SortAt(ListFile* data, ColumnListView* clickedColumn);
 
 
 
@@ -57,31 +57,22 @@ void DrawListFileView(HDC hdc, ListFileView* lfv, RECT rcPaint) {
 
     FillRect(hdc, &lfv->bounds, g_brushs[IC_BTN_BACKGROUND]);
 
-    int paintTopVirtual = (rcPaint.top - lfv->bounds.top) + lfv->scrollPos;
-    int paintBottomVirtual = (rcPaint.bottom - lfv->bounds.top) + lfv->scrollPos;
-
-    // Traduction directe en index de tableau (sans boucle, par division)
-    int fullRowHeight = ROW_HEIGHT + 2;
-    int startIndex = paintTopVirtual / fullRowHeight;
-    int endIndex = (paintBottomVirtual + fullRowHeight - 1) / fullRowHeight;
-
-    RECT itemsArea = lfv->bounds;
-    itemsArea.right -= SCROLLBAR_WIDTH;
-
     if (list->count <= 0 || !list->file)
         return;
 
+    const RECT itemsArea = lfv->itemsArea;
+
     int totalContentHeight = list->count * ROW_HEIGHT;
-    int viewHeight = itemsArea.bottom - itemsArea.top;
+    int viewHeight = RectHeight(&itemsArea);
 
     SetBkMode(hdc, TRANSPARENT);
 
     RECT rowBounds = { 0 };
 
-    if (startIndex < 0) startIndex = 0;
-    if (endIndex >= list->count) endIndex = list->count - 1;
+    POINT i_range = GetIndexRange(lfv, rcPaint);
 
-    for (size_t i = startIndex; i < endIndex; i++) {
+    for (int i = i_range.x; i < i_range.y; i++) {
+
         rowBounds = GetNextRowBounds(i, lfv->scrollPos, itemsArea);
 
         ElementFile* file = list->file + i;
@@ -95,29 +86,8 @@ void DrawListFileView(HDC hdc, ListFileView* lfv, RECT rcPaint) {
         DrawItem(hdc, file, rowBounds, itemsArea);
     }
 
-    // 4. DESSIN DE LA SCROLLBAR SUR MESURE (Rectangle à droite)
-    if (totalContentHeight > viewHeight) { // On ne la dessine que si ça déborde
-        RECT sbTrack = { itemsArea.right, lfv->bounds.top, lfv->bounds.right, lfv->bounds.bottom };
-
-        // Fond de la glissière (un peu plus clair que le fond global)
-        HBRUSH hTrackBrush = CreateSolidBrush(RGB(37, 37, 37));
-        FillRect(hdc, &sbTrack, hTrackBrush);
-        DeleteObject(hTrackBrush);
-
-        // Calcul de la taille et de la position du Curseur (Thumb)
-        int thumbHeight = (viewHeight * viewHeight) / totalContentHeight;
-        if (thumbHeight < 20) thumbHeight = 20; // Sécurité hauteur minimale pour le choper au clic
-
-        int maxScrollPos = totalContentHeight - viewHeight;
-        int maxThumbY = viewHeight - thumbHeight;
-        int thumbTop = sbTrack.top + (lfv->scrollPos * maxThumbY) / maxScrollPos;
-
-        RECT sbThumb = { sbTrack.left + 2, thumbTop, sbTrack.right - 2, thumbTop + thumbHeight };
-
-        // Couleur du curseur (Gris mode sombre, style Windows 11)
-        HBRUSH hThumbBrush = CreateSolidBrush(lfv->isDraggingScroll ? RGB(100, 100, 100) : RGB(70, 70, 70));
-        FillRect(hdc, &sbThumb, hThumbBrush);
-        DeleteObject(hThumbBrush);
+    if (totalContentHeight > viewHeight) {
+        DrawScrollBar(hdc, lfv, viewHeight, totalContentHeight);
     }
 
     SelectClipRgn(hdc, NULL);
@@ -125,65 +95,57 @@ void DrawListFileView(HDC hdc, ListFileView* lfv, RECT rcPaint) {
 
 
 void HandleListViewLButtonDown(HWND hWnd, int x, int y, ListFileView* listView) {
-    RECT thumbRect = GetScrollThumbRect(listView);
+    
+    int totalContentHeight = listView->data->count * ROW_HEIGHT;
+    int viewHeight = RectHeight(&listView->bounds);
+    
+    RECT thumb = GetThumbRect(listView, viewHeight, totalContentHeight);
     POINT pt = { x, y };
 
-    if (PtInRect(&thumbRect, pt)) {
+    if (PtInRect(&thumb, pt)) {
         listView->isDraggingScroll = TRUE;
-        listView->dragYOffset = y - thumbRect.top; // Conserver le décalage exact du clic
-        SetCapture(hWnd); // Capturer la souris pour pouvoir glisser même en dehors de la fenêtre
+        listView->dragYOffset = y - thumb.top;
+
+        // Drag out window
+        SetCapture(hWnd); 
+
         InvalidateRect(hWnd, &listView->bounds, FALSE);
     }
 }
 
-
 void HandleListViewMouseMove(HWND hWnd, int x, int y, ListFileView* listView) {
 
-    int localY = y - listView->bounds.top;
-    int virtualY = localY + listView->scrollPos;
-
-    int newhoverI = virtualY / (ROW_HEIGHT + VERT_ITEM_SPACE);
-
-    if (newhoverI != listView->indexHover) {
-        RECT lastR = listView->bounds;
-        lastR.top += (listView->indexHover * (ROW_HEIGHT + VERT_ITEM_SPACE)) - listView->scrollPos;
-        lastR.bottom = lastR.top + ROW_HEIGHT;
-
-        RECT newR = listView->bounds;
-        newR.top += (newhoverI * (ROW_HEIGHT + VERT_ITEM_SPACE)) - listView->scrollPos;
-        newR.bottom = newR.top + ROW_HEIGHT;
-
-        listView->indexHover = newhoverI;
-        InvalidateRect(hWnd, &lastR, FALSE);
-        InvalidateRect(hWnd, &newR, FALSE);
-        //InvalidateRect(hWnd, &listView->bounds, FALSE);
+    int newIHover = GetHoverIndex(hWnd, y, listView);
+    if (newIHover != listView->indexHover)
+    {
+        InvalidatePairItem(hWnd, listView->bounds, listView->scrollPos, newIHover, listView->indexHover);
+        listView->indexHover = newIHover;
     }
-
+    
     if (!listView->isDraggingScroll) return;
 
-    int viewHeight = listView->bounds.bottom - listView->bounds.top;
-
     int totalContentHeight = listView->data->count * ROW_HEIGHT;
+    int viewHeight = RectHeight(&listView->bounds);
 
     int maxScrollPos = totalContentHeight - viewHeight;
 
-    RECT thumbRect = GetScrollThumbRect(listView);
-    int thumbHeight = thumbRect.bottom - thumbRect.top;
+    RECT thumb = GetThumbRect(listView, viewHeight, totalContentHeight);
+    int thumbHeight = RectHeight(&thumb);
+    
     int maxThumbY = viewHeight - thumbHeight;
 
-    // Calculer la nouvelle position cible du haut du curseur
     int proposedThumbTop = y - listView->dragYOffset - listView->bounds.top;
+    proposedThumbTop = CLAMP(proposedThumbTop, 0, maxThumbY);
 
-    // Borner les valeurs pour éviter de sortir des limites de la piste
-    if (proposedThumbTop < 0) proposedThumbTop = 0;
-    if (proposedThumbTop > maxThumbY) proposedThumbTop = maxThumbY;
-
-    // Règle de trois pour convertir la position du curseur (pixels) en position de défilement du contenu
+    /*
+        maxScrollPos        ==>      maxThumbY
+        newScrollPos ??     <==      proposedThumbTop
+    */
     int newScrollPos = (proposedThumbTop * maxScrollPos) / maxThumbY;
 
     if (newScrollPos != listView->scrollPos) {
         listView->scrollPos = newScrollPos;
-        InvalidateRect(hWnd, &listView->bounds, FALSE); // Redessiner immédiatement sans scintillement
+        InvalidateRect(hWnd, &listView->bounds, FALSE);
     }
 }
 
@@ -200,69 +162,34 @@ void HandleListViewLButtonUp(HWND hWnd, ListFileView* listView) {
 void HandleListViewMouseWheel(HWND hWnd, int wheelDelta, LPARAM lParam, ListFileView* listView) {
     if (!listView) return;
     
-    // 1. Récupérer les coordonnées écran de la souris
     POINT mousePt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
 
-    // Convertir les coordonnées écran en coordonnées relatives à la fenêtre (hWnd)
     ScreenToClient(hWnd, &mousePt);
 
-    // 2. SÉCURITÉ : On ne scroll que si la souris est physiquement AU-DESSUS du composant
     if (!PtInRect(&listView->bounds, mousePt)) {
         return;
     }
 
-    // Calculer le nombre d'octants de rotation (généralement 1 par cran de molette)
     int scrollCrans = wheelDelta / WHEEL_DELTA;
 
-    // Définir la sensibilité : combien de lignes on saute par cran de molette (traditionnellement 3)
     int linesToScroll = 3;
-    int pixelScrollAmount = scrollCrans * linesToScroll * ROW_HEIGHT;
+    int scrollSensitivity = linesToScroll * ROW_HEIGHT;
+    int pixelScrollAmount = scrollCrans * scrollSensitivity;
 
-    // 4. Mettre à jour la position (La molette est inversée : rouler vers le haut = défiler vers le haut)
     int newScrollPos = listView->scrollPos - pixelScrollAmount;
 
-    // 5. Calculer les limites pour ne pas scroller dans le vide
-    int viewHeight = listView->bounds.bottom - listView->bounds.top;
     int totalContentHeight = listView->data->count * ROW_HEIGHT;
-    int maxScrollPos = totalContentHeight - viewHeight;
-    if (maxScrollPos < 0) maxScrollPos = 0; // Le contenu tient entièrement dans l'écran
+    int viewHeight = RectHeight(&listView->bounds);
 
-    // Borner la nouvelle position
-    if (newScrollPos < 0) newScrollPos = 0;
-    if (newScrollPos > maxScrollPos) newScrollPos = maxScrollPos;
+    int maxScrollPos = max(0, totalContentHeight - viewHeight);
 
-    // 6. Si la position a changé, on redessine le composant
+    newScrollPos = CLAMP(newScrollPos, 0, maxScrollPos);
+
     if (newScrollPos != listView->scrollPos) {
         listView->scrollPos = newScrollPos;
-        InvalidateRect(hWnd, &listView->bounds, FALSE); // FALSE évite le scintillement (flicker)
+        InvalidateRect(hWnd, &listView->bounds, FALSE); 
     }
 }
-
-
-RECT GetScrollThumbRect(ListFileView* listView) {
-    int viewHeight = listView->bounds.bottom - listView->bounds.top;
-    int totalContentHeight = listView->data->count * ROW_HEIGHT;
-    RECT thumbRect = { 0 };
-
-    if (totalContentHeight <= viewHeight) return thumbRect;
-
-    int thumbHeight = (viewHeight * viewHeight) / totalContentHeight;
-    if (thumbHeight < 20) thumbHeight = 20;
-
-    int maxScrollPos = totalContentHeight - viewHeight;
-    int maxThumbY = viewHeight - thumbHeight;
-    int thumbTop = listView->bounds.top + (listView->scrollPos * maxThumbY) / maxScrollPos;
-
-    thumbRect.left = listView->bounds.right - SCROLLBAR_WIDTH + 2;
-    thumbRect.right = listView->bounds.right - 2;
-    thumbRect.top = thumbTop;
-    thumbRect.bottom = thumbTop + thumbHeight;
-
-    return thumbRect;
-}
-
-
-
 
 
 
@@ -284,12 +211,21 @@ RECT GetScrollThumbRect(ListFileView* listView) {
 
 void UpdateListFileView(ListFileView* lfv)
 {
-    qsort(lfv->data->file, lfv->data->count, sizeof(ElementFile), CompareByName);
+    lfv->scrollPos = 0;
+
+    SortListFileView(lfv);
+    
+    CalculateItemsArea(lfv);
+
+    CalculateTrackThumb(lfv);
+    
+    CalculateClipRegion(lfv);
+    
     InvalidateRect(lfv->hwnd, &lfv->bounds, FALSE);
 }
 
-void DeleteListFileView(ListFileView* lfv) {
-    DeleteObject(lfv->clipRgn);
+void FreeListFileView(ListFileView* lfv) {
+    if (lfv->clipRgn) DeleteObject(lfv->clipRgn);
 }
 
 
@@ -307,8 +243,14 @@ void DeleteListFileView(ListFileView* lfv) {
 
 
 
+static inline void DrawScrollBar(HDC hdc, ListFileView* __restrict lfv, int viewHeight, int totalContentHeight) {
+    FillRect(hdc, &lfv->sbTrack, g_brushs[IC_BTN_HOVER]);
 
-
+    ColorIndex iColor = lfv->isDraggingScroll ? IC_BTN_BORDER : IC_BTN_CLICK;
+    
+    RECT sbThumb = GetThumbRect(lfv, viewHeight, totalContentHeight);
+    FillRect(hdc, &sbThumb, g_brushs[iColor]);
+}
 
 static inline void DrawItem(HDC hdc, ElementFile* __restrict file, RECT rowBounds, RECT itemsArea) {
     DrawColumnImageList(hdc, file->indexIcon, 5, rowBounds, itemsArea);
@@ -337,7 +279,7 @@ static inline void DrawColumnText(HDC hdc, const wchar_t* __restrict text, RECT 
     DrawTextW(hdc, text, -1, &textBounds, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
 }
 
-static inline RECT GetNextRowBounds(int i, int scrollPos, RECT area) {
+static inline RECT GetNextRowBounds(int i, int scrollPos, const RECT area) {
     RECT rowBounds;
     rowBounds.left = area.left;
     rowBounds.right = area.right;
@@ -355,60 +297,105 @@ static inline RECT GetNextTextBounds(int x, int width, RECT rowBounds, RECT item
     return textBounds;
 }
 
-static int CompareByName(const void* a, const void* b)
-{
-    ElementFile* elemA = (ElementFile*)a;
-    ElementFile* elemB = (ElementFile*)b;
+static inline int GetHoverIndex(HWND hWnd, int ymouse, ListFileView* lfv) {
+    int localY = ymouse - lfv->bounds.top;
+    int virtualY = localY + lfv->scrollPos;
 
-    int diff = CompareByDirectory(elemA, elemB);
-    if (diff != 0)
-        return diff;
+    int newhoverI = virtualY / (ROW_HEIGHT + VERT_ITEM_SPACE);
 
-    diff = _wcsicmp(elemA->name, elemB->name); // case-insensitive
-    return g_TriCroissant ? diff : -diff;
+    return newhoverI;
 }
 
-static int CompareBySize(const void* a, const void* b)
-{
-    ElementFile* elemA = (ElementFile*)a;
-    ElementFile* elemB = (ElementFile*)b;
+static inline void InvalidatePairItem(HWND hwnd, RECT bounds, int scrollPos, int i1, int i2) {
+    RECT lastR = bounds;
+    lastR.top += (i1 * (ROW_HEIGHT + VERT_ITEM_SPACE)) - scrollPos;
+    lastR.bottom = lastR.top + ROW_HEIGHT;
 
-    int diff = CompareByDirectory(elemA, elemB);
-    if (diff != 0)
-        return diff;
+    RECT newR = bounds;
+    newR.top += (i2 * (ROW_HEIGHT + VERT_ITEM_SPACE)) - scrollPos;
+    newR.bottom = newR.top + ROW_HEIGHT;
 
-    BOOL ABetter = (elemA->size) > (elemB->size);
-    BOOL BBetter = (elemA->size) < (elemB->size);
-    diff = ABetter - BBetter;
-    return g_TriCroissant ? diff : -diff;
+    InvalidateRect(hwnd, &lastR, FALSE);
+    InvalidateRect(hwnd, &newR, FALSE);
 }
 
-static inline void ChangeSortingMethod(ColumnListView clickedColumn) {
-    if (g_sortColumn == clickedColumn)
+static inline POINT GetIndexRange(ListFileView* __restrict lfv, RECT rcPaint) {
+    int paintTopVirtual = (rcPaint.top - lfv->bounds.top) + lfv->scrollPos;
+    int paintBottomVirtual = (rcPaint.bottom - lfv->bounds.top) + lfv->scrollPos;
+
+    DEBUG_PRINT(L"RECT rcpaint: %dx%d", rcPaint.right - rcPaint.left, rcPaint.bottom - rcPaint.top);
+
+    int fullRowHeight = ROW_HEIGHT + VERT_ITEM_SPACE;
+
+    int startIndex = paintTopVirtual / fullRowHeight;
+
+    // integer division rounding up
+    unsigned int endIndex = (paintBottomVirtual + fullRowHeight - 1) / fullRowHeight;
+
+    if (startIndex < 0) startIndex = 0;
+    if (endIndex >= lfv->data->count) endIndex = lfv->data->count - 1;
+
+    return (POINT){ startIndex, endIndex };
+}
+
+static inline void CalculateClipRegion(ListFileView* lfv) {
+    if (lfv->clipRgn)
     {
-        g_TriCroissant = !g_TriCroissant;
+        RECT clipRect;
+        GetRgnBox(lfv->clipRgn, &clipRect);
+
+        if (EqualRect(&lfv->bounds, &clipRect)) 
+            return;
     }
-    else
-    {
-        g_sortColumn = clickedColumn;
-        g_TriCroissant = TRUE;
+
+    lfv->clipRgn = CreateRectRgnIndirect(&lfv->bounds);
+}
+
+static inline void CalculateItemsArea(ListFileView* lfv) {
+    lfv->itemsArea = lfv->bounds;
+    lfv->itemsArea.right -= SCROLLBAR_WIDTH;
+}
+
+static inline void CalculateTrackThumb(ListFileView* lfv) {
+    RECT itemsArea = lfv->itemsArea;
+    RECT bounds = lfv->bounds;
+    int dataCount = lfv->data->count;
+
+    lfv->sbTrack = (RECT){ itemsArea.right, bounds.top, bounds.right, bounds.bottom };
+
+    int totalContentHeight = dataCount * ROW_HEIGHT;
+    int viewHeight = itemsArea.bottom - itemsArea.top;
+
+    int thumbHeight = (viewHeight * viewHeight) / totalContentHeight;
+
+    lfv->sbThumbHeight = max(thumbHeight, MIN_THUMB_HEIGHT);
+}
+
+
+static inline RECT GetThumbRect(ListFileView* lfv, int viewHeight, int totalContentHeight) {
+    RECT track = lfv->sbTrack;
+    
+    int maxScrollPos = totalContentHeight - viewHeight;
+    int maxThumbY = viewHeight - lfv->sbThumbHeight;
+
+    int thumbTop = track.top + (lfv->scrollPos * maxThumbY) / maxScrollPos;
+
+    return (RECT) { track.left, thumbTop, track.right, thumbTop + lfv->sbThumbHeight };
+}
+
+static inline void SortListFileView(ListFileView* lfv) {
+    BOOL sorted = FALSE;
+    for (int i = 0; i < lfv->n_columns; i++) {
+        ColumnListView* col = lfv->columns + i;
+
+        if (sorted) {
+            col->isSorted = FALSE;
+        } else if (col->isSorted) {
+            SortAt(lfv->data, col);
+        }
     }
 }
 
-static inline int CompareByDirectory(ElementFile* A, ElementFile* B) {
-    BOOL isDirA = !!(A->flags & ElementDirectory);
-    BOOL isDirB = !!(B->flags & ElementDirectory);
-
-    return isDirB - isDirA;
-}
-
-static inline void SortAt(ColumnListView clickedColumn) {
-    switch (clickedColumn) {
-    case COLUMN_LISTVIEW_NAME:
-        qsort(m_list->file, m_list->count, sizeof(ElementFile), CompareByName);
-        break;
-    case COLUMN_LISTVIEW_SIZE:
-        qsort(m_list->file, m_list->count, sizeof(ElementFile), CompareBySize);
-        break;
-    }
+static inline void SortAt(ListFile *data, ColumnListView* clickedColumn) {
+    qsort(data->file, data->count, sizeof(ElementFile), clickedColumn->FuncComparison);
 }

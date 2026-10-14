@@ -10,3 +10,6 @@ typedef const void* (*Callback) (void);
 
 const ListFile* LaunchChoiceExplorer(void);
 const ListFile* OpenDialogFolder(void);
+
+int CompareByName(const void* a, const void* b);
+int CompareBySize(const void* a, const void* b);
