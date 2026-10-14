@@ -23,8 +23,8 @@ static BOOL m_thumbnail_hover = FALSE;
 #define THUMBNAIL_LABEL_H 10
 #define COLUMN_MAX 3
 
-static inline void CreateClassRegistration(const wchar_t* classname, HINSTANCE hInst);
 SearchResult SearchOpenExplorer(wchar_t* outPath, DWORD maxLen);
+static inline void CreateClassRegistration(const wchar_t* classname, HINSTANCE hInst);
 static inline RECT CalculateWindowRect();
 static inline POINT CalculateThumbnailPos(int index);
 static inline void RunModal();
@@ -98,6 +98,7 @@ static LRESULT CALLBACK ThumbnailSubclassProc(HWND hwnd, UINT msg, WPARAM wParam
     case WM_LBUTTONDOWN:
     {
         g_indexSelection = index;
+        m_thumbnail_hover = FALSE;
         DestroyWindow(hwndParent);
         return 0;
     }
@@ -191,6 +192,7 @@ LRESULT CALLBACK AltTabChoixProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
     }
 
     case WM_DESTROY:
+        m_thumbnail_hover = FALSE;
         CloseChoiceExplorer();
         PostQuitMessage(0);
         break;

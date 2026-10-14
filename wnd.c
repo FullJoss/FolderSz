@@ -12,8 +12,6 @@ HWND CreateMainWindow(const wchar_t *title, int width, int height, WindowDataInf
 {
     HINSTANCE hinstance = GetModuleHandle(NULL);
 
-    DWORD styleFixe = WS_OVERLAPPEDWINDOW & ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
-
     WNDCLASSW wc = {0};
     wc.lpfnWndProc = MainWindowProc;
     wc.hInstance = hinstance;
@@ -26,14 +24,22 @@ HWND CreateMainWindow(const wchar_t *title, int width, int height, WindowDataInf
 
     const POINT INITIAL_WINDOW_POS = { CW_USEDEFAULT , CW_USEDEFAULT };
 
-    // 3. Création de la fenêtre avec CreateWindowEx
+    DWORD styleFixe = WS_OVERLAPPEDWINDOW & ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
+    RECT rc = { 0, 0, width, height };
+    DWORD dwExStyle = 0;
+
+    AdjustWindowRectEx(&rc, styleFixe, FALSE, dwExStyle);
+
+    int largeurGlobale = rc.right - rc.left;
+    int hauteurGlobale = rc.bottom - rc.top;
+
     HWND temp = CreateWindowExW(
-        0,                           
+        dwExStyle,
         L"WINDOW_SIMPLE",            
         title,                      
         styleFixe,                   
         INITIAL_WINDOW_POS.x, INITIAL_WINDOW_POS.y,
-        width, height,              
+        largeurGlobale, hauteurGlobale,
         NULL,                      
         NULL,                 
         hinstance,                  
@@ -69,13 +75,14 @@ static inline int OnMouseMove(WPARAM wParam, LPARAM lParam, WindowDataInformatio
     int xPos = GET_X_LPARAM(lParam);
     int yPos = GET_Y_LPARAM(lParam);
 
+    int r = 1;
     for (int i = 0; i < window_info->n_buttons; i++)
     {
         if (ButtonHitTest(wParam, xPos, yPos, window_info->btnsHead + i))
-            return 0;
+            r = 0;
     }
 
-    return 1;
+    return r;
 }
 static inline int OnLeftButtonDown(WPARAM wParam, LPARAM lParam, WindowDataInformation* window_info) {
     int xPos = GET_X_LPARAM(lParam);
@@ -107,6 +114,7 @@ static inline int OnPaint(WindowDataInformation* window_info) {
 LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     WindowDataInformation *window_info = (WindowDataInformation *)GetWindowLongPtrW(hwnd, GWLP_USERDATA);
+    static BOOL trackingMouse = FALSE;
 
     switch (uMsg)
     {
@@ -133,9 +141,31 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
     case WM_MOUSEMOVE:
     {
+        if (!trackingMouse) {
+            TRACKMOUSEEVENT tme;
+            tme.cbSize = sizeof(TRACKMOUSEEVENT);
+            tme.dwFlags = TME_LEAVE;
+            tme.hwndTrack = hwnd;
+            tme.dwHoverTime = HOVER_DEFAULT;
+
+            if (TrackMouseEvent(&tme)) {
+                trackingMouse = TRUE;
+            }
+        }
+
         if (OnMouseMove(wParam, lParam, window_info) == 0)
             return 0;
 
+        break;
+    }
+    case WM_MOUSELEAVE: {
+        trackingMouse = FALSE;
+
+        for (int i = 0; i < window_info->n_buttons; i++) {
+            window_info->btnsHead[i].state = PBS_NORMAL;
+        }
+
+        InvalidateRect(hwnd, NULL, FALSE);
         break;
     }
 

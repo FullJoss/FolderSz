@@ -1,40 +1,47 @@
 #include "cache.h"
 #include <stdio.h>
 #include "dialog.h"
+#include "feature.h"
 #include <string.h>
 
-static int g_NbCacheEntries = 0;
-static CacheEntry* g_CacheTable = NULL;
+#define CACHE_FILE_NAME L"FolderSz.cache"
+
+#define SET_USE(mask, idx)   ((mask)[(idx) >> 5] |= (1 << ((idx) & 31)))
+#define GET_USE(mask, idx)   ((mask)[(idx) >> 5] & (1 << ((idx) & 31)))
+
+static unsigned int g_NbCacheEntries = 0;
+
+static CacheEntry g_CacheTable[MAX_CACHE_ENTRIES] = { 0 };
+static unsigned int g_CacheBitTable[MAX_BITMASK_ENTRIES] = { 0 };
 
 static wchar_t g_PathBuffer[32768];
 
 static unsigned int iteration_tracker = 0;
 
+static inline void ReadCacheBinaryFile(wchar_t* filename);
+static inline void DecompressTable(CacheEntry* buffer);
+static inline CacheEntry* CompressTable();
+
 void LoadCache(void)
 {
-    g_NbCacheEntries = 0;
-
-    g_CacheTable = (CacheEntry*)calloc(MAX_CACHE_ENTRIES, sizeof(CacheEntry));
-    if (g_CacheTable == NULL)
-        return;
-
-    FILE *f = NULL;
-    // On tente d'ouvrir le fichier en lecture binaire
-    if (_wfopen_s(&f, L"cache.dat", L"rb") == 0 && f != NULL)
-    {
-        g_NbCacheEntries = (int)fread(g_CacheTable, sizeof(CacheEntry), MAX_CACHE_ENTRIES, f);
-        fclose(f);
-    }
+    ReadCacheBinaryFile(CACHE_FILE_NAME);
 }
 
 void SaveCache(void)
 {
+    CacheEntry* bufferRAM = CompressTable();
+    if (!bufferRAM) return;
+
     FILE *f = NULL;
-    if (_wfopen_s(&f, L"cache.dat", L"wb") == 0 && f != NULL)
+    if (_wfopen_s(&f, CACHE_FILE_NAME, L"wb") == 0 && f != NULL)
     {
-        fwrite(g_CacheTable, sizeof(CacheEntry), MAX_CACHE_ENTRIES, f);
+        fwrite(g_CacheBitTable, sizeof(unsigned int), MAX_BITMASK_ENTRIES, f);
+        fwrite(&g_NbCacheEntries, sizeof(unsigned int), 1, f);
+        fwrite(bufferRAM, sizeof(CacheEntry), g_NbCacheEntries, f);
         fclose(f);
     }
+
+    free(bufferRAM);
 }
 
 CacheStatus FindSizeCachePath(ULONGLONG hash, FILETIME dateActuelle, ULONGLONG *outTaille)
@@ -43,7 +50,7 @@ CacheStatus FindSizeCachePath(ULONGLONG hash, FILETIME dateActuelle, ULONGLONG *
 
     size_t index = (size_t)(hash % MAX_CACHE_ENTRIES);
     size_t begin = index;
-    while (g_CacheTable[index].use && g_CacheTable[index].hash != hash) {
+    while (GET_USE(g_CacheBitTable, index) && g_CacheTable[index].hash != hash) {
         index = (index + 1) % MAX_CACHE_ENTRIES;
 
         if (begin == index) {
@@ -52,7 +59,7 @@ CacheStatus FindSizeCachePath(ULONGLONG hash, FILETIME dateActuelle, ULONGLONG *
         }
     }
 
-    if (g_CacheTable[index].use) {
+    if (GET_USE(g_CacheBitTable, index)) {
         if (CompareFileTime(&g_CacheTable[index].derniereModif, &dateActuelle) == 0)
         {
             *outTaille = g_CacheTable[index].size;
@@ -119,7 +126,6 @@ ULONGLONG GetSizeCachePath(size_t lenPath, FILETIME lastModif)
 
             size_t ancienneLongueur = lenPath;
 
-            // 3. On écrit le sous-élément. g_PathBuffer devient "D:\Dossier\SousElement"
             int ecrit = swprintf_s(g_PathBuffer + lenPath, 32768 - lenPath, L"\\%s", pFindData->cFileName);
 
             if (ecrit != -1)
@@ -131,7 +137,6 @@ ULONGLONG GetSizeCachePath(size_t lenPath, FILETIME lastModif)
                 }
                 else
                 {
-                    // C'est un fichier basique : lecture instantanée de sa taille
                     ULONGLONG tailleFichier = ((ULONGLONG)pFindData->nFileSizeHigh << 32) | pFindData->nFileSizeLow;
                     tailleTotale += tailleFichier;
                 }
@@ -139,6 +144,7 @@ ULONGLONG GetSizeCachePath(size_t lenPath, FILETIME lastModif)
                 g_PathBuffer[ancienneLongueur] = L'\0';
             }
 
+            RefreshView();
         } while (FindNextFileW(hFind, pFindData));
 
         FindClose(hFind);
@@ -151,12 +157,10 @@ ULONGLONG GetSizeCachePath(size_t lenPath, FILETIME lastModif)
 }
 
 void UpdateCacheElement(ULONGLONG hash, ULONGLONG size, FILETIME time) {
-
-    // 1. Calcul de l'index de départ avec le modulo
     size_t index = (size_t)(hash % MAX_CACHE_ENTRIES);
     size_t depart = index;
 
-    while (g_CacheTable[index].use && g_CacheTable[index].hash != hash) {
+    while (GET_USE(g_CacheBitTable, index) && g_CacheTable[index].hash != hash) {
         index = (index + 1) % MAX_CACHE_ENTRIES;
 
         if (index == depart) {
@@ -165,10 +169,11 @@ void UpdateCacheElement(ULONGLONG hash, ULONGLONG size, FILETIME time) {
         }
     }
 
-    if (!g_CacheTable[index].use) {
+    if (!GET_USE(g_CacheBitTable, index)) {
         // Insert
         g_CacheTable[index].hash = hash;
-        g_CacheTable[index].use = TRUE;
+        SET_USE(g_CacheBitTable, index);
+        g_NbCacheEntries++;
     }
 
     // Update
@@ -178,23 +183,94 @@ void UpdateCacheElement(ULONGLONG hash, ULONGLONG size, FILETIME time) {
 
 ULONGLONG fnv_1a(const wchar_t *chemin)
 {
-    // Constantes officielles de l'algorithme FNV-1a pour 64 bits
     ULONGLONG hash = 0xcbf29ce484222325ULL;
     const ULONGLONG prime = 0x100000001b3ULL;
 
-    // parcourt la chaîne
     for (size_t i = 0; chemin[i] != L'\0'; ++i)
     {
-        // Extraction du premier octet du caractère (UNICODE)
-        UINT8 octet1 = (UINT8)(chemin[i] & 0xFF);
-        hash ^= octet1;
+        // two bytes (UNICODE)
+        UINT8 byte1 = (UINT8)(chemin[i] & 0xFF);
+        hash ^= byte1;
         hash *= prime;
 
-        // Extraction du second octet du caractère
-        UINT8 octet2 = (UINT8)((chemin[i] >> 8) & 0xFF);
-        hash ^= octet2;
+        UINT8 byte2 = (UINT8)((chemin[i] >> 8) & 0xFF);
+        hash ^= byte2;
         hash *= prime;
     }
 
     return hash;
+}
+
+static inline void ReadCacheBinaryFile(wchar_t* filename) {
+
+    CacheEntry* bufferRAM = NULL;
+
+    FILE* f = NULL;
+
+    if (_wfopen_s(&f, filename, L"rb") == 0 && f != NULL)
+    {
+        size_t count = fread(g_CacheBitTable, sizeof(unsigned int), MAX_BITMASK_ENTRIES, f);
+        
+        if (count != MAX_BITMASK_ENTRIES) {
+            perror("Error opening cache");
+            fclose(f);
+        }
+
+        fread(&g_NbCacheEntries, sizeof(unsigned int), 1, f);
+
+        if (g_NbCacheEntries > 0) {
+            bufferRAM = malloc(sizeof(CacheEntry) * g_NbCacheEntries);
+            if (!bufferRAM) {
+                perror("Save Error Buffer Allocation");
+                fclose(f);
+                return;
+            }
+
+            fread(bufferRAM, sizeof(CacheEntry), g_NbCacheEntries, f);
+        }
+
+        fclose(f);
+    }
+
+    DecompressTable(bufferRAM);
+}
+
+
+static inline void DecompressTable(CacheEntry* buffer) {
+    unsigned int ibuffer = 0;
+
+    for (int i = 0; i < MAX_CACHE_ENTRIES; i++) {
+        if (GET_USE(g_CacheBitTable, i)) {
+            g_CacheTable[i] = buffer[ibuffer];
+
+            ibuffer++;
+
+            if (ibuffer >= g_NbCacheEntries)
+                break;
+        }
+    }
+
+    free(buffer);
+}
+
+static inline CacheEntry* CompressTable() {
+    CacheEntry* bufferRAM = malloc(sizeof(CacheEntry) * g_NbCacheEntries);
+    if (!bufferRAM) {
+        perror("Save Error Buffer Allocation");
+        return NULL;
+    }
+
+    int ibuffer = 0;
+    for (int i = 0; i < MAX_CACHE_ENTRIES; i++) {
+        if (GET_USE(g_CacheBitTable, i)) {
+            bufferRAM[ibuffer] = g_CacheTable[i];
+
+            ibuffer++;
+
+            if (ibuffer >= g_NbCacheEntries)
+                break;
+        }
+    }
+
+    return bufferRAM;
 }

@@ -23,13 +23,18 @@ typedef struct {
     unsigned int capacity;
 } ListFile;
 
+typedef const void* StaticPtr;
+
 #define MAX_LISTVIEW_ELEMENT
 
 extern wchar_t *current_path;
 
-wchar_t *load_folder();
-int rename_file(const wchar_t *ancienChemin, const wchar_t *nouveauNom);
-ListFile* ScanFilePath(const wchar_t *dossierPath);
+wchar_t *LoadFolderDialog();
+
+StaticPtr ScanFilePath(const wchar_t *dossierPath);
+
+// Call at cache.c
+void RefreshView();
 
 static inline void AddFlagsElement(ElementFile *element, ElementFlags flag)
 {

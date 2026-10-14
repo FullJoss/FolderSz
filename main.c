@@ -11,7 +11,6 @@
 #include "layout.h"
 
 #pragma comment(lib, "shlwapi.lib")
-#pragma comment(lib, "uxtheme.lib")
 #pragma comment(lib, "dwmapi.lib")
 
 #define NB_BUTTON 2
@@ -37,7 +36,7 @@ int main()
     buttons[0].bounds = GetNextBounds(150, 38, TRUE);
     buttons[1].bounds = GetFinalBounds(WIN_WIDTH, 38, TRUE);
   
-    CreateListView(10, 60, WIN_WIDTH - 30, 500);
+    CreateListView(10, 60, WIN_WIDTH - 10, 600 - 38 - 10 - 10);
 
     LaunchChoiceExplorer();
 

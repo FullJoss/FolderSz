@@ -91,6 +91,6 @@ static inline ColorIndex ButonStateToIndexColor(int state) {
     case PBS_HOT:
         return IC_BTN_HOVER;
     default:
-        return PBS_NORMAL;
+        return IC_BTN_BACKGROUND;
     }
 }

@@ -1,13 +1,13 @@
 #include <windows.h>
 
 #define MAX_CACHE_ENTRIES 312083
+#define MAX_BITMASK_ENTRIES ((MAX_CACHE_ENTRIES + 31) / 32)
 
 typedef struct
 {
     ULONGLONG hash;
     ULONGLONG size;
     FILETIME derniereModif;
-    BOOL use;
 } CacheEntry;
 
 typedef enum

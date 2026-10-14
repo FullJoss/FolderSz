@@ -9,7 +9,7 @@ static wchar_t m_current_path[MAX_PATH] = { 0 };
 
 void OpenDialogFolder(void)
 {
-    wchar_t *chaine = load_folder();
+    wchar_t *chaine = LoadFolderDialog();
 
     if (chaine == NULL) return;
 
@@ -27,5 +27,5 @@ void LaunchChoiceExplorer(void) {
         UpdateListView(lf);
     }
     else
-        MessageBox_View(L"Aucune explorer windows ouvert");
+        MessageBox_View(L"No Windows Explorer windows are open.");
 }

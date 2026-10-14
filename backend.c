@@ -49,6 +49,7 @@ static BOOL GetExplorerPath(IWebBrowserApp* pBrowser, HWND hwnd, wchar_t* path, 
         if (suffix) *suffix = L'\0';
     }
 
+    OutputDebugStringW(path);
     return (path[0] != L'\0' && wcscmp(path, L" ") != 0);
 }
 
@@ -97,4 +98,33 @@ int Backend_GetOpenExplorers(ExplorerInfo* outList, int maxCapacity) {
     SAFE_RELEASE(pSHWindows);
     CoUninitialize();
     return foundCount;
+}
+
+wchar_t* Backend_ExctractFilePath(IShellItem* pItem) {
+    PWSTR pszFolderPath = NULL;
+    wchar_t* value = NULL;
+
+    HRESULT hr = pItem->lpVtbl->GetDisplayName(pItem, SIGDN_FILESYSPATH, &pszFolderPath);
+    if (SUCCEEDED(hr))
+    {
+        value = _wcsdup(pszFolderPath);
+        CoTaskMemFree(pszFolderPath);
+    }
+    pItem->lpVtbl->Release(pItem);
+
+    return value;
+}
+
+IShellItem* Backend_DeployDialogSelector(IFileOpenDialog* pDlg) {
+    DWORD dwOptions;
+    pDlg->lpVtbl->GetOptions(pDlg, &dwOptions);
+    pDlg->lpVtbl->SetOptions(pDlg, dwOptions | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM);
+    HRESULT hr = pDlg->lpVtbl->Show(pDlg, mainHwnd);
+
+    IShellItem* pItem = NULL;
+    if (SUCCEEDED(hr))
+    {
+        hr = pDlg->lpVtbl->GetResult(pDlg, &pItem);
+    }
+    return pItem;
 }

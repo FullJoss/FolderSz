@@ -1,4 +1,10 @@
 #include "theme.h"
+#include <commctrl.h>
+#include <uxtheme.h>
+
+#pragma comment(lib, "uxTheme.lib")
+#pragma comment(lib, "comctl32.lib")
+
 
 COLORREF g_colors[IC_COUNT] = { 0 };
 HBRUSH g_brushs[IC_COUNT] = { 0 };
@@ -118,14 +124,12 @@ void SetListViewTheme(HWND hwnd)
     ListView_SetTextBkColor(hwnd, g_colors[IC_WINDOW_COLOR]);
     ListView_SetTextColor(hwnd, g_colors[IC_TEXT]);
 
-    if (isDarkMode)
-    {
-        HWND hWndHeader = (HWND)SendMessage(hwnd, LVM_GETHEADER, 0, 0);
+    SetWindowTheme(hwnd, (isDarkMode ? L"DarkMode_Explorer" : L"Explorer"), NULL);
 
-        if (hWndHeader != NULL) {
-            SetWindowTheme(hWndHeader, L"DarkMode_ItemsView", NULL);
-        }
-        SetWindowTheme(hwnd, L"DarkMode_Explorer", NULL);
+    HWND hwndHeader = ListView_GetHeader(hwnd);
+    if (hwndHeader != NULL)
+    {
+        SetWindowTheme(hwndHeader, L"DarkMode_ItemsView", NULL);
     }
 }
 

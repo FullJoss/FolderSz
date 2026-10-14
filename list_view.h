@@ -11,5 +11,5 @@ typedef enum {
 
 void CreateListView(int x, int y, int width, int height);
 
-int NotifListView(LPARAM lParam);
+BOOL NotifListView(LPARAM lParam);
 void UpdateListView(ListFile* lf);

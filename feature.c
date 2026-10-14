@@ -3,41 +3,25 @@
 #include "list_view.h"
 #include "cache.h"
 #include "dialog.h"
+#include "backend.h"
+#include "tick.h"
 
 static ListFile listFile = { NULL, 0, 0 };
 wchar_t *current_path = NULL;
 
+#define REFRESH_TIME_SECOND 2.0
+static double m_scan_time = 0;
 
-static inline wchar_t* ExctractFilePath(IShellItem* pItem) {
-    PWSTR pszFolderPath = NULL;
-    wchar_t* value = NULL;
-    // 7. Extraire le chemin d'accès sous forme de chaîne de caractères
-    HRESULT hr = pItem->lpVtbl->GetDisplayName(pItem, SIGDN_FILESYSPATH, &pszFolderPath);
-    if (SUCCEEDED(hr))
-    {
-        value = _wcsdup(pszFolderPath);
-        CoTaskMemFree(pszFolderPath);
-    }
-    pItem->lpVtbl->Release(pItem);
+static inline void PushData(wchar_t* pathElement, ElementFile* element, WIN32_FIND_DATAW* data);
+static inline void AttachIcon(ElementFile* element, wchar_t* path, SHFILEINFOW* sfiFile, WIN32_FIND_DATAW* data);
+static BOOL FilterSpecificPath(const wchar_t* path);
+static inline void IdentifyFile(ElementFile* element, WIN32_FIND_DATAW* data);
+static inline void IdentifyFolder(wchar_t* pathElement, ElementFile* element, WIN32_FIND_DATAW* data);
+static inline void IdentifyFileSystem(ElementFile* element, WIN32_FIND_DATAW* data);
+static inline HCURSOR ChangeCursor();
+static inline void RestorCursor(HCURSOR hOldCursor);
 
-    return value;
-}
-
-static inline IShellItem* DeployDialogSelector(IFileOpenDialog* pDlg) {
-    DWORD dwOptions;
-    pDlg->lpVtbl->GetOptions(pDlg, &dwOptions);
-    pDlg->lpVtbl->SetOptions(pDlg, dwOptions | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM);
-    HRESULT hr = pDlg->lpVtbl->Show(pDlg, mainHwnd);
-
-    IShellItem* pItem = NULL;
-    if (SUCCEEDED(hr))
-    {
-        hr = pDlg->lpVtbl->GetResult(pDlg, &pItem);
-    }
-    return pItem;
-}
-
-wchar_t *load_folder()
+wchar_t *LoadFolderDialog()
 {
     wchar_t *value = NULL;
 
@@ -52,10 +36,10 @@ wchar_t *load_folder()
 
         if (SUCCEEDED(hr))
         {
-            IShellItem* pItem = DeployDialogSelector(pDlg);
+            IShellItem* pItem = Backend_DeployDialogSelector(pDlg);
             if (pItem)
             {
-                value = ExctractFilePath(pItem);
+                value = Backend_ExctractFilePath(pItem);
             }
             pDlg->lpVtbl->Release(pDlg);
         }
@@ -66,23 +50,7 @@ wchar_t *load_folder()
     return value;
 }
 
-static BOOL FilterSpecificPath(const wchar_t *path)
-{
-    if (_wcsicmp(path, L"C:\\Windows") == 0)
-        return TRUE;
-    if (_wcsicmp(path, L"C:\\Program Files") == 0)
-        return TRUE;
-    if (_wcsicmp(path, L"C:\\Program Files (x86)") == 0)
-        return TRUE;
-    if (_wcsicmp(path, L"C:\\ProgramData") == 0)
-        return TRUE;
-    if (_wcsicmp(path, L"C:\\$Recycle.Bin") == 0)
-        return TRUE;
-
-    return FALSE;
-}
-
-static BOOL Manage_max_capacity()
+static BOOL ManageMaxCapacity()
 {
     int capacity = listFile.capacity;
     int count = listFile.count;
@@ -100,7 +68,7 @@ static BOOL Manage_max_capacity()
             if (listFile.file) 
                 free(listFile.file);
 
-            MessageBox_View(L"Erreur : Allocation mémoire échouée !");
+            perror("listFile allocation failed!");
             return FALSE;
         }
 
@@ -109,20 +77,23 @@ static BOOL Manage_max_capacity()
     }
     return TRUE;
 }
-ListFile* ScanFilePath(const wchar_t *dossierPath)
+
+StaticPtr ScanFilePath(const wchar_t *dossierPath)
 {
+    HCURSOR hOldCursor = ChangeCursor();
+
     listFile.count = 0;
 
     SetWindowTextW(mainHwnd, dossierPath);
 
-    // GDI/Win32 requiert un masque de recherche (ex: "C:\MonDossier\*")
     wchar_t masque[MAX_PATH];
     swprintf_s(masque, MAX_PATH, L"%s\\*", dossierPath);
 
     WIN32_FIND_DATAW findData;
     HANDLE hFind = FindFirstFileExW(masque, FindExInfoBasic, &findData, FindExSearchNameMatch, NULL, FIND_FIRST_EX_LARGE_FETCH);
-
     SHFILEINFOW sfiFile = {0};
+
+    InitTick();
 
     if (hFind != INVALID_HANDLE_VALUE)
     {
@@ -137,53 +108,115 @@ ListFile* ScanFilePath(const wchar_t *dossierPath)
             }
 
             listFile.count++;
-            if (!Manage_max_capacity())
+            if (!ManageMaxCapacity())
                 break;
 
-            // Stocker les données
-            ElementFile *element = &listFile.file[listFile.count - 1];
+            ElementFile* element = &listFile.file[listFile.count - 1];
             wcscpy_s(element->name, MAX_PATH, findData.cFileName);
 
             wchar_t cheminComplet[MAX_PATH];
             PathCombineW(cheminComplet, dossierPath, findData.cFileName);
 
-            DWORD filterMask = FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM;
-
-            if (FilterSpecificPath(cheminComplet) || (findData.dwFileAttributes & filterMask) == filterMask)
-            {
-                AddFlagsElement(element, ElementSystem);
-
-                if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-                    AddFlagsElement(element, ElementDirectory);
-                else RemoveFlagsElement(element, ElementDirectory);
-
-                element->size = 0;
-            }
-            else if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-            {
-                RemoveFlagsElement(element, ElementSystem);
-                AddFlagsElement(element, ElementDirectory);
-                element->size = SearchFolderSize(cheminComplet, findData.ftLastWriteTime);
-            }
-            else
-            {
-                RemoveFlagsElement(element, ElementSystem);
-                RemoveFlagsElement(element, ElementDirectory);
-                element->size = ((ULONGLONG)findData.nFileSizeHigh << 32) | findData.nFileSizeLow;
-            }
-
-            SHGetFileInfoW(
-                cheminComplet,
-                findData.dwFileAttributes,
-                &sfiFile,
-                sizeof(sfiFile),
-                SHGFI_SYSICONINDEX | SHGFI_SMALLICON | SHGFI_USEFILEATTRIBUTES);
-
-            element->indexIcon = sfiFile.iIcon;
+            PushData(cheminComplet, element, &findData);
+            AttachIcon(element, cheminComplet, &sfiFile, &findData);
 
         } while (FindNextFileW(hFind, &findData));
         FindClose(hFind);
     }
 
+    RestorCursor(hOldCursor);
+
     return &listFile;
+}
+
+void RefreshView() {
+    double deltaTime = GetElapsedTime();
+    m_scan_time += deltaTime;
+
+    if (m_scan_time >= REFRESH_TIME_SECOND) {
+        UpdateListView(&listFile);
+        m_scan_time -= REFRESH_TIME_SECOND;
+    }
+}
+
+static inline void PushData(wchar_t *pathElement, ElementFile* element, WIN32_FIND_DATAW *data) {
+
+    DWORD isHiddenSystem = FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM;
+
+    if (FilterSpecificPath(pathElement) || (data->dwFileAttributes & isHiddenSystem) == isHiddenSystem)
+    {
+        IdentifyFileSystem(element, data);
+    }
+    else if (data->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+    {
+        IdentifyFolder(pathElement, element, data);
+    }
+    else
+    {
+        IdentifyFile(element, data);
+    }
+}
+
+static inline void AttachIcon(ElementFile* element, wchar_t *path, SHFILEINFOW* sfiFile, WIN32_FIND_DATAW *data) {
+    SHGetFileInfoW(
+        path,
+        data->dwFileAttributes,
+        sfiFile,
+        sizeof(*sfiFile),
+        SHGFI_SYSICONINDEX | SHGFI_SMALLICON | SHGFI_USEFILEATTRIBUTES);
+
+    element->indexIcon = sfiFile->iIcon;
+}
+
+
+static BOOL FilterSpecificPath(const wchar_t* path)
+{
+    if (_wcsicmp(path, L"C:\\Windows") == 0)
+        return TRUE;
+    if (_wcsicmp(path, L"C:\\Program Files") == 0)
+        return TRUE;
+    if (_wcsicmp(path, L"C:\\Program Files (x86)") == 0)
+        return TRUE;
+    if (_wcsicmp(path, L"C:\\ProgramData") == 0)
+        return TRUE;
+    if (_wcsicmp(path, L"C:\\$Recycle.Bin") == 0)
+        return TRUE;
+
+    return FALSE;
+}
+
+static inline void IdentifyFileSystem(ElementFile* element, WIN32_FIND_DATAW* data) {
+    AddFlagsElement(element, ElementSystem);
+
+    if (data->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+        AddFlagsElement(element, ElementDirectory);
+    else RemoveFlagsElement(element, ElementDirectory);
+
+    element->size = 0;
+}
+
+static inline void IdentifyFolder(wchar_t* pathElement, ElementFile* element, WIN32_FIND_DATAW* data) {
+    RemoveFlagsElement(element, ElementSystem);
+    AddFlagsElement(element, ElementDirectory);
+    element->size = SearchFolderSize(pathElement, data->ftLastWriteTime);
+}
+
+static inline void IdentifyFile(ElementFile* element, WIN32_FIND_DATAW* data) {
+    RemoveFlagsElement(element, ElementSystem);
+    RemoveFlagsElement(element, ElementDirectory);
+    element->size = ((ULONGLONG)data->nFileSizeHigh << 32) | data->nFileSizeLow;
+}
+
+static inline HCURSOR ChangeCursor() {
+    HCURSOR hWaitCursor = LoadCursor(NULL, IDC_WAIT);
+    HCURSOR hOldCursor = SetCursor(hWaitCursor);
+
+    SetCapture(GetDesktopWindow());
+
+    return hOldCursor;
+}
+
+static inline void RestorCursor(HCURSOR hOldCursor) {
+    ReleaseCapture();
+    SetCursor(hOldCursor);
 }

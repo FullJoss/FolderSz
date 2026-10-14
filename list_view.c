@@ -9,9 +9,134 @@ ColumnListView g_sortColumn = COLUMN_LISTVIEW_NAME;
 static HWND m_hwnd = NULL;
 static ListFile* m_list;
 
+static inline void AttachExplorerImageList(HWND hwnd);
+static inline void AddColumn(HWND hwnd, ColumnListView column_index, wchar_t* name, int width);
+static inline void ManageColumn(HWND hwnd, int width);
+static inline void ChangeSortingMethod(ColumnListView clickedColumn);
+static inline void GetText(NMLVDISPINFOW* plvdi, int index);
+static inline int CompareByDirectory(ElementFile* A, ElementFile* B);
+static inline void SortAt(ColumnListView clickedColumn);
+
+
+static int CompareByName(const void *a, const void *b)
+{
+    ElementFile *elemA = (ElementFile *)a;
+    ElementFile *elemB = (ElementFile *)b;
+
+    int diff = CompareByDirectory(elemA, elemB);
+    if (diff != 0)
+        return diff;
+
+    diff = _wcsicmp(elemA->name, elemB->name); // case-insensitive
+    return g_TriCroissant ? diff : -diff;
+}
+
+static int CompareBySize(const void *a, const void *b)
+{
+    ElementFile *elemA = (ElementFile *)a;
+    ElementFile *elemB = (ElementFile *)b;
+
+    int diff = CompareByDirectory(elemA, elemB);
+    if (diff != 0)
+        return diff;
+
+    BOOL ABetter = (elemA->size) > (elemB->size);
+    BOOL BBetter = (elemA->size) < (elemB->size);
+    diff = ABetter - BBetter;
+    return g_TriCroissant ? diff : -diff;
+}
+
+void CreateListView(int x, int y, int width, int height)
+{
+    HINSTANCE instance = GetModuleHandle(NULL);
+    m_hwnd = CreateWindowExW(
+        0, WC_LISTVIEWW, L"",
+        WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_OWNERDATA,
+        x, y, width, height,
+        mainHwnd, (HMENU)IDC_MY_LISTVIEW, instance, NULL);
+
+    ManageColumn(m_hwnd, width);
+
+    ListView_SetExtendedListViewStyle(m_hwnd, LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER);
+
+    SetListViewTheme(m_hwnd);
+    AttachExplorerImageList(m_hwnd);
+
+    return;
+}
+
+static inline BOOL OnColumnClick(LPNMHDR lpnmh)
+{
+    LPNMLISTVIEW pnmv = (LPNMLISTVIEW)lpnmh;
+    ColumnListView clickedColumn = pnmv->iSubItem;
+
+    ChangeSortingMethod(clickedColumn);
+    SortAt(clickedColumn);
+
+    // Refreshes the range of lines
+    SendMessage(m_hwnd, LVM_REDRAWITEMS, 0, m_list->count - 1);
+
+    InvalidateRect(m_hwnd, NULL, TRUE);
+    UpdateWindow(m_hwnd);
+
+    return TRUE;
+}
+
+static void OnGetInfoLines(LPNMHDR lpnmh)
+{
+    NMLVDISPINFOW* plvdi = (NMLVDISPINFOW*)lpnmh;
+
+    unsigned int index = plvdi->item.iItem;
+
+    if (index >= m_list->count)
+        return;
+
+    // Provide the corresponding icon.
+    if (plvdi->item.mask & LVIF_IMAGE)
+    {
+        plvdi->item.iImage = m_list->file[index].indexIcon;
+    }
+
+    if (plvdi->item.mask & LVIF_TEXT)
+    {
+        GetText(plvdi, index);
+    }
+}
+
+void UpdateListView(ListFile* lf)
+{
+    qsort(lf->file, lf->count, sizeof(ElementFile), CompareByName);
+
+    SendMessageW(m_hwnd, LVM_SETITEMCOUNT, (WPARAM)lf->count, 0);
+    InvalidateRect(m_hwnd, NULL, TRUE);
+    UpdateWindow(m_hwnd);
+
+    m_list = lf;
+}
+
+BOOL NotifListView(LPARAM lParam)
+{
+    LPNMHDR lpnmh = (LPNMHDR)lParam;
+ 
+    if (lpnmh->idFrom != IDC_MY_LISTVIEW)
+        return FALSE;
+
+    switch (lpnmh->code) {
+    case LVN_COLUMNCLICK:
+        OnColumnClick(lpnmh);
+        break;
+    case LVN_GETDISPINFOW:
+        OnGetInfoLines(lpnmh);
+        break;
+    }
+
+    return TRUE;
+}
+
+
 static inline void AttachExplorerImageList(HWND hwnd) {
 
-    SHFILEINFOW sfi = {0};
+    SHFILEINFOW sfi = { 0 };
 
     HIMAGELIST hSystemImageList = (HIMAGELIST)SHGetFileInfoW(
         L"C:\\",
@@ -25,16 +150,18 @@ static inline void AttachExplorerImageList(HWND hwnd) {
         ListView_SetImageList(hwnd, hSystemImageList, LVSIL_SMALL);
     }
 }
-static inline void AddColumn(HWND hwnd, ColumnListView column_index, const wchar_t* name, int width) {
+
+static inline void AddColumn(HWND hwnd, ColumnListView column_index, wchar_t* name, int width) {
     LVCOLUMNW lvc = { 0 };
     lvc.mask = LVCF_TEXT | LVCF_WIDTH;
     lvc.pszText = name;
     lvc.cx = width;
-    HRESULT hr = SendMessageW(hwnd, LVM_INSERTCOLUMNW, column_index, (LPARAM)&lvc);
+    LRESULT hr = SendMessageW(hwnd, LVM_INSERTCOLUMNW, column_index, (LPARAM)&lvc);
 
     if (FAILED(hr))
         MessageBox_View(L"Failed to add column");
 }
+
 static inline void ManageColumn(HWND hwnd, int width) {
     int widthColumnSize = (width - 30) / 3;
     int widthColumnName = (width - 30) - widthColumnSize;
@@ -81,34 +208,6 @@ static inline int CompareByDirectory(ElementFile* A, ElementFile* B) {
     return isDirB - isDirA;
 }
 
-static int CompareByName(const void *a, const void *b)
-{
-    ElementFile *elemA = (ElementFile *)a;
-    ElementFile *elemB = (ElementFile *)b;
-
-    int diff = CompareByDirectory(elemA, elemB);
-    if (diff != 0)
-        return diff;
-
-    diff = _wcsicmp(elemA->name, elemB->name); // case-insensitive
-    return g_TriCroissant ? diff : -diff;
-}
-
-static int CompareBySize(const void *a, const void *b)
-{
-    ElementFile *elemA = (ElementFile *)a;
-    ElementFile *elemB = (ElementFile *)b;
-
-    int diff = CompareByDirectory(elemA, elemB);
-    if (diff != 0)
-        return diff;
-
-    BOOL ABetter = (elemA->size) > (elemB->size);
-    BOOL BBetter = (elemA->size) < (elemB->size);
-    diff = ABetter - BBetter;
-    return g_TriCroissant ? diff : -diff;
-}
-
 static inline void SortAt(ColumnListView clickedColumn) {
     switch (clickedColumn) {
     case COLUMN_LISTVIEW_NAME:
@@ -118,92 +217,4 @@ static inline void SortAt(ColumnListView clickedColumn) {
         qsort(m_list->file, m_list->count, sizeof(ElementFile), CompareBySize);
         break;
     }
-}
-
-void CreateListView(int x, int y, int width, int height)
-{
-    HINSTANCE instance = GetModuleHandle(NULL);
-    m_hwnd = CreateWindowExW(
-        0, WC_LISTVIEWW, L"",
-        WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_OWNERDATA,
-        x, y, width, height,
-        mainHwnd, (HMENU)IDC_MY_LISTVIEW, instance, NULL);
-
-    ManageColumn(m_hwnd, width);
-
-    SetWindowTheme(m_hwnd, L"Explorer", NULL);
-
-    ListView_SetExtendedListViewStyle(m_hwnd, LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER);
-
-    SetListViewTheme(m_hwnd);
-    AttachExplorerImageList(m_hwnd);
-
-    return;
-}
-
-static inline BOOL OnColumnClick(LPNMHDR lpnmh)
-{
-    LPNMLISTVIEW pnmv = (LPNMLISTVIEW)lpnmh;
-    ColumnListView clickedColumn = pnmv->iSubItem;
-
-    ChangeSortingMethod(clickedColumn);
-    SortAt(clickedColumn);
-
-    // Refreshes the range of lines
-    SendMessage(m_hwnd, LVM_REDRAWITEMS, 0, m_list->count - 1);
-
-    InvalidateRect(m_hwnd, NULL, TRUE);
-    UpdateWindow(m_hwnd);
-
-    return TRUE;
-}
-
-static void OnGetInfoLines(LPNMHDR lpnmh)
-{
-    NMLVDISPINFOW* plvdi = (NMLVDISPINFOW*)lpnmh;
-
-    int index = plvdi->item.iItem;
-
-    if (index >= m_list->count)
-        return;
-
-    // Provide the corresponding icon.
-    if (plvdi->item.mask & LVIF_IMAGE)
-    {
-        plvdi->item.iImage = m_list->file[index].indexIcon;
-    }
-
-    if (plvdi->item.mask & LVIF_TEXT)
-    {
-        GetText(plvdi, index);
-    }
-}
-
-void UpdateListView(ListFile* lf)
-{
-    qsort(lf->file, lf->count, sizeof(ElementFile), CompareByName);
-
-    SendMessageW(m_hwnd, LVM_SETITEMCOUNT, (WPARAM)lf->count, 0);
-    InvalidateRect(m_hwnd, NULL, TRUE);
-
-    m_list = lf;
-}
-
-BOOL NotifListView(LPARAM lParam)
-{
-    LPNMHDR lpnmh = (LPNMHDR)lParam;
-
-    if (lpnmh->idFrom != IDC_MY_LISTVIEW)
-        return FALSE;
-
-    switch (lpnmh->code) {
-    case LVN_COLUMNCLICK:
-        OnColumnClick(lpnmh);
-        break;
-    case LVN_GETDISPINFOW:
-        OnGetInfoLines(lpnmh);
-        break;
-    }
-
-    return TRUE;
 }

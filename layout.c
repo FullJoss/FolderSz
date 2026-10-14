@@ -23,12 +23,12 @@ RECT GetFinalBounds(int total, int fixedValue, BOOL horizontal) {
     if (horizontal) {
         accx += margin + lastWidth;
         int space = total - accx;
-        width = space - margin * 2;
+        width = space - margin;
     }
     else {
         accy += margin + lastHeight;
         int space = total - accy;
-        height = space - margin * 2;
+        height = space - margin;
     }
 
     return (RECT) { accx, accy, accx + width, accy + height };
