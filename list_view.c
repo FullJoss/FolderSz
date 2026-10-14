@@ -3,93 +3,101 @@
 #include "theme.h"
 #include "dialog.h"
 
-// Configuration visuelle du mode sombre
 #define ROW_HEIGHT          26
 #define COLUMN_0_WIDTH      300
 #define ICON_SIZE           16
 #define ICON_PADDING        6
 #define TEXT_PADDING        10
-#define SCROLLBAR_WIDTH     14  // Une barre fine et moderne de 12px
+#define SCROLLBAR_WIDTH     14
+#define VERT_ITEM_SPACE     2
 
 BOOL g_TriCroissant = TRUE;
 ColumnListView g_sortColumn = COLUMN_LISTVIEW_NAME;
 
-HIMAGELIST hSystemImageList = NULL;
-
+static wchar_t sizeBuffer[32];
 static HWND m_hwnd = NULL;
 static ListFile* m_list;
 
-static int CompareBySize(const void* a, const void* b);
+
+static inline void DrawItem(HDC hdc, ElementFile* __restrict file, RECT rowBounds, RECT itemsArea);
+static inline void DrawColumnImageList(HDC hdc, int indexIcon, int paddingLeft, RECT rowBounds, RECT itemsArea);
+static inline void DrawColumnText(HDC hdc, const wchar_t* __restrict text, RECT textBounds);
+static inline RECT GetNextRowBounds(int i, int scrollPos, RECT area);
+static inline RECT GetNextTextBounds(int x, int row, RECT rowBounds, RECT itemsArea);
 static int CompareByName(const void* a, const void* b);
+static int CompareBySize(const void* a, const void* b);
 static inline void ChangeSortingMethod(ColumnListView clickedColumn);
 static inline int CompareByDirectory(ElementFile* A, ElementFile* B);
 static inline void SortAt(ColumnListView clickedColumn);
-static inline void GetAccessHSystemList();
+
 RECT GetScrollThumbRect(ListFileView* listView);
 
-void DrawListFileView(HDC hdc, ListFileView* lfv) {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void DrawListFileView(HDC hdc, ListFileView* lfv, RECT rcPaint) {
     ListFile *list = lfv->data;
     if (!list) return;
 
-    if (!hSystemImageList)
-        GetAccessHSystemList();
+    SelectClipRgn(hdc, lfv->clipRgn);
 
+    FillRect(hdc, &lfv->bounds, g_brushs[IC_BTN_BACKGROUND]);
 
-    // 1. Découpage de sécurité (Anti-débordement)
-    HRGN hClipRegion = CreateRectRgnIndirect(&lfv->bounds);
-    SelectClipRgn(hdc, hClipRegion);
+    int paintTopVirtual = (rcPaint.top - lfv->bounds.top) + lfv->scrollPos;
+    int paintBottomVirtual = (rcPaint.bottom - lfv->bounds.top) + lfv->scrollPos;
 
-    // 2. Dessiner le fond global (Noir/Gris très sombre)
-    HBRUSH hBgBrush = CreateSolidBrush(RGB(30, 30, 30));
-    FillRect(hdc, &lfv->bounds, hBgBrush);
-    DeleteObject(hBgBrush);
+    // Traduction directe en index de tableau (sans boucle, par division)
+    int fullRowHeight = ROW_HEIGHT + 2;
+    int startIndex = paintTopVirtual / fullRowHeight;
+    int endIndex = (paintBottomVirtual + fullRowHeight - 1) / fullRowHeight;
 
-    // Calcul de la zone réservée aux fichiers (on retire la largeur de la scrollbar à droite)
-    RECT fileArea = lfv->bounds;
-    fileArea.right -= SCROLLBAR_WIDTH;
+    RECT itemsArea = lfv->bounds;
+    itemsArea.right -= SCROLLBAR_WIDTH;
 
-    int totalContentHeight = list->count* ROW_HEIGHT;
-    int viewHeight = lfv->bounds.bottom - lfv->bounds.top;
+    if (list->count <= 0 || !list->file)
+        return;
 
-    // 3. DESSIN DES FICHIERS (Uniquement dans fileArea)
-    if (list->count > 0 && list->file) {
-        SetBkMode(hdc, TRANSPARENT);
-        RECT rowBounds;
-        RECT textBounds;
-        wchar_t sizeBuffer[32];
+    int totalContentHeight = list->count * ROW_HEIGHT;
+    int viewHeight = itemsArea.bottom - itemsArea.top;
 
-        for (int i = 0; i < list->count; i++) {
-            rowBounds.left = fileArea.left;
-            rowBounds.right = fileArea.right;
-            rowBounds.top = fileArea.top + (i * ROW_HEIGHT) - lfv->scrollPos;
-            rowBounds.bottom = rowBounds.top + ROW_HEIGHT;
+    SetBkMode(hdc, TRANSPARENT);
 
-            if (rowBounds.bottom < fileArea.top) continue;
-            if (rowBounds.top > fileArea.bottom) break;
+    RECT rowBounds = { 0 };
 
-            // Colonne 0 : Icône + Nom
-            int iconY = rowBounds.top + ((ROW_HEIGHT - ICON_SIZE) / 2);
-            ImageList_Draw(hSystemImageList, list->file[i].indexIcon, hdc, fileArea.left + 5, iconY, ILD_TRANSPARENT);
+    if (startIndex < 0) startIndex = 0;
+    if (endIndex >= list->count) endIndex = list->count - 1;
 
-            textBounds.left = fileArea.left + 5 + ICON_SIZE + 6;
-            textBounds.top = rowBounds.top;
-            textBounds.right = fileArea.left + COLUMN_0_WIDTH;
-            textBounds.bottom = rowBounds.bottom;
-            SetTextColor(hdc, RGB(240, 240, 240));
-            DrawTextW(hdc, list->file[i].name, -1, &textBounds, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+    for (size_t i = startIndex; i < endIndex; i++) {
+        rowBounds = GetNextRowBounds(i, lfv->scrollPos, itemsArea);
 
-            // Colonne 1 : Taille
-            textBounds.left = fileArea.left + COLUMN_0_WIDTH + 10;
-            textBounds.right = fileArea.right - 5;
-            StrFormatByteSizeW(list->file[i].size, sizeBuffer, ARRAYSIZE(sizeBuffer));
-            SetTextColor(hdc, RGB(150, 150, 150));
-            DrawTextW(hdc, sizeBuffer, -1, &textBounds, DT_RIGHT | DT_VCENTER | DT_SINGLELINE);
-        }
+        ElementFile* file = list->file + i;
+
+        if (rowBounds.bottom < itemsArea.top) continue;
+        if (rowBounds.top > itemsArea.bottom) break;
+
+        if (i == lfv->indexHover)
+            FillRect(hdc, &rowBounds, g_brushs[IC_BTN_HOVER]);
+
+        DrawItem(hdc, file, rowBounds, itemsArea);
     }
 
     // 4. DESSIN DE LA SCROLLBAR SUR MESURE (Rectangle à droite)
     if (totalContentHeight > viewHeight) { // On ne la dessine que si ça déborde
-        RECT sbTrack = { fileArea.right, lfv->bounds.top, lfv->bounds.right, lfv->bounds.bottom };
+        RECT sbTrack = { itemsArea.right, lfv->bounds.top, lfv->bounds.right, lfv->bounds.bottom };
 
         // Fond de la glissière (un peu plus clair que le fond global)
         HBRUSH hTrackBrush = CreateSolidBrush(RGB(37, 37, 37));
@@ -113,8 +121,8 @@ void DrawListFileView(HDC hdc, ListFileView* lfv) {
     }
 
     SelectClipRgn(hdc, NULL);
-    DeleteObject(hClipRegion);
 }
+
 
 void HandleListViewLButtonDown(HWND hWnd, int x, int y, ListFileView* listView) {
     RECT thumbRect = GetScrollThumbRect(listView);
@@ -128,11 +136,35 @@ void HandleListViewLButtonDown(HWND hWnd, int x, int y, ListFileView* listView) 
     }
 }
 
+
 void HandleListViewMouseMove(HWND hWnd, int x, int y, ListFileView* listView) {
+
+    int localY = y - listView->bounds.top;
+    int virtualY = localY + listView->scrollPos;
+
+    int newhoverI = virtualY / (ROW_HEIGHT + VERT_ITEM_SPACE);
+
+    if (newhoverI != listView->indexHover) {
+        RECT lastR = listView->bounds;
+        lastR.top += (listView->indexHover * (ROW_HEIGHT + VERT_ITEM_SPACE)) - listView->scrollPos;
+        lastR.bottom = lastR.top + ROW_HEIGHT;
+
+        RECT newR = listView->bounds;
+        newR.top += (newhoverI * (ROW_HEIGHT + VERT_ITEM_SPACE)) - listView->scrollPos;
+        newR.bottom = newR.top + ROW_HEIGHT;
+
+        listView->indexHover = newhoverI;
+        InvalidateRect(hWnd, &lastR, FALSE);
+        InvalidateRect(hWnd, &newR, FALSE);
+        //InvalidateRect(hWnd, &listView->bounds, FALSE);
+    }
+
     if (!listView->isDraggingScroll) return;
 
     int viewHeight = listView->bounds.bottom - listView->bounds.top;
+
     int totalContentHeight = listView->data->count * ROW_HEIGHT;
+
     int maxScrollPos = totalContentHeight - viewHeight;
 
     RECT thumbRect = GetScrollThumbRect(listView);
@@ -155,6 +187,7 @@ void HandleListViewMouseMove(HWND hWnd, int x, int y, ListFileView* listView) {
     }
 }
 
+
 void HandleListViewLButtonUp(HWND hWnd, ListFileView* listView) {
     if (listView->isDraggingScroll) {
         listView->isDraggingScroll = FALSE;
@@ -163,9 +196,10 @@ void HandleListViewLButtonUp(HWND hWnd, ListFileView* listView) {
     }
 }
 
+
 void HandleListViewMouseWheel(HWND hWnd, int wheelDelta, LPARAM lParam, ListFileView* listView) {
     if (!listView) return;
-
+    
     // 1. Récupérer les coordonnées écran de la souris
     POINT mousePt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
 
@@ -228,10 +262,97 @@ RECT GetScrollThumbRect(ListFileView* listView) {
 }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void UpdateListFileView(ListFileView* lfv)
 {
     qsort(lfv->data->file, lfv->data->count, sizeof(ElementFile), CompareByName);
     InvalidateRect(lfv->hwnd, &lfv->bounds, FALSE);
+}
+
+void DeleteListFileView(ListFileView* lfv) {
+    DeleteObject(lfv->clipRgn);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+static inline void DrawItem(HDC hdc, ElementFile* __restrict file, RECT rowBounds, RECT itemsArea) {
+    DrawColumnImageList(hdc, file->indexIcon, 5, rowBounds, itemsArea);
+
+    RECT textBounds;
+
+    int x_column_0 = 8 + 5 + ICON_SIZE;
+    textBounds = GetNextTextBounds(x_column_0, COLUMN_0_WIDTH, rowBounds, itemsArea);
+
+    DrawColumnText(hdc, file->name, textBounds);
+
+    int x_column_1 = x_column_0 + COLUMN_0_WIDTH + 5;
+    textBounds = GetNextTextBounds(x_column_1, COLUMN_0_WIDTH, rowBounds, itemsArea);
+
+    StrFormatByteSizeW(file->size, sizeBuffer, ARRAYSIZE(sizeBuffer));
+    DrawColumnText(hdc, sizeBuffer, textBounds);
+}
+
+static inline void DrawColumnImageList(HDC hdc, int indexIcon, int paddingLeft, RECT rowBounds, RECT itemsArea) {
+    int iconY = rowBounds.top + ((ROW_HEIGHT - ICON_SIZE) / 2);
+    ImageList_Draw(g_systemImageList, indexIcon, hdc, itemsArea.left + paddingLeft, iconY, ILD_TRANSPARENT);
+}
+
+static inline void DrawColumnText(HDC hdc, const wchar_t* __restrict text, RECT textBounds) {
+    SetTextColor(hdc, g_colors[IC_TEXT]);
+    DrawTextW(hdc, text, -1, &textBounds, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+}
+
+static inline RECT GetNextRowBounds(int i, int scrollPos, RECT area) {
+    RECT rowBounds;
+    rowBounds.left = area.left;
+    rowBounds.right = area.right;
+    rowBounds.top = area.top + (i * (ROW_HEIGHT + VERT_ITEM_SPACE)) - scrollPos;
+    rowBounds.bottom = rowBounds.top + ROW_HEIGHT;
+    return rowBounds;
+}
+
+static inline RECT GetNextTextBounds(int x, int width, RECT rowBounds, RECT itemsArea) {
+    RECT textBounds;
+    textBounds.left = itemsArea.left + x;
+    textBounds.right = itemsArea.left + x + width;
+    textBounds.top = rowBounds.top;
+    textBounds.bottom = rowBounds.bottom;
+    return textBounds;
 }
 
 static int CompareByName(const void* a, const void* b)
@@ -260,21 +381,6 @@ static int CompareBySize(const void* a, const void* b)
     BOOL BBetter = (elemA->size) < (elemB->size);
     diff = ABetter - BBetter;
     return g_TriCroissant ? diff : -diff;
-}
-
-static inline void GetAccessHSystemList() {
-    SHFILEINFOW sfi = { 0 };
-
-    // On demande au système les informations pour un dossier générique.
-    // Le drapeau SHGFI_SYSICONINDEX est la clé : il demande le handle de la liste globale.
-    // Le drapeau SHGFI_SMALLICON spécifie qu'on veut les icônes de taille 16x16 pixels.
-    hSystemImageList = (HIMAGELIST)SHGetFileInfoW(
-        L"C:\\",
-        FILE_ATTRIBUTE_DIRECTORY,
-        &sfi,
-        sizeof(sfi),
-        SHGFI_SYSICONINDEX | SHGFI_SMALLICON | SHGFI_USEFILEATTRIBUTES
-    );
 }
 
 static inline void ChangeSortingMethod(ColumnListView clickedColumn) {

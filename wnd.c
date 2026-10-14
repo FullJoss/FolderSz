@@ -106,7 +106,7 @@ static inline int OnPaint(WindowDataInformation* window_info) {
 
     HFONT hOldFont = (HFONT)SelectObject(hdc, g_font);
 
-    DrawListFileView(hdc, window_info->lfv);
+    DrawListFileView(hdc, window_info->lfv, ps.rcPaint);
 
     for (int i = 0; i < window_info->n_buttons; i++)
         ButtonDraw(hdc, window_info->buttons + i);

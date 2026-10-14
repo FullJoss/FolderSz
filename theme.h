@@ -17,6 +17,7 @@ extern COLORREF g_colors[IC_COUNT];
 extern HBRUSH g_brushs[IC_COUNT];
 extern HFONT g_font;
 extern HPEN CONST_PEN_SELECTION;
+extern HIMAGELIST g_systemImageList;
 
 void InitTheme();
 void FreeTheme();

@@ -13,15 +13,19 @@ typedef struct {
     RECT bounds;
     HWND hwnd;
     ListFile* data;
-    int scrollPos;
+    float scrollPos;
     int dragYOffset;
-    BOOL isDraggingScroll;  // True si l'utilisateur maintient le clic sur le curseur
+    int indexHover;
+    BOOL isDraggingScroll; 
+
+    HRGN clipRgn;
 } ListFileView;
 
-void DrawListFileView(HDC hdc, ListFileView* lfv);
+void DrawListFileView(HDC hdc, ListFileView* lfv, RECT rcPaint);
 RECT GetScrollThumbRect(ListFileView* listView);
 void HandleListViewLButtonUp(HWND hWnd, ListFileView* listView);
 void HandleListViewMouseMove(HWND hWnd, int x, int y, ListFileView* listView);
 void HandleListViewLButtonDown(HWND hWnd, int x, int y, ListFileView* listView);
 void HandleListViewMouseWheel(HWND hWnd, int wheelDelta, LPARAM lParam, ListFileView* listView);
 void UpdateListFileView(ListFileView* lfv);
+void DeleteListFileView(ListFileView* lfv);

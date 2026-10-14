@@ -260,7 +260,7 @@ static inline CacheEntry* CompressTable() {
         return NULL;
     }
 
-    int ibuffer = 0;
+    unsigned int ibuffer = 0;
     for (int i = 0; i < MAX_CACHE_ENTRIES; i++) {
         if (GET_USE(g_CacheBitTable, i)) {
             bufferRAM[ibuffer] = g_CacheTable[i];

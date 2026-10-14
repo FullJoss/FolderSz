@@ -39,6 +39,7 @@ int main()
     int y = 38 + 10 + 10;
     ListFileView lfv = { 0 };
     lfv.bounds = (RECT){ 10, y, WIN_WIDTH - 10, WIN_HEIGHT - 10 };
+    lfv.clipRgn = CreateRectRgnIndirect(&lfv.bounds);
     lfv.hwnd = mainHwnd;
     lfv.data = LaunchChoiceExplorer();
     info.lfv = &lfv;
@@ -46,6 +47,8 @@ int main()
     UpdateListFileView(&lfv);
 
     int code = LaunchWindow(mainHwnd);
+
+    DeleteListFileView(&lfv);
 
     FreeTheme();
 
