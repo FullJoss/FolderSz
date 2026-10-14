@@ -1,31 +1,31 @@
 #include "pch.h"
 #include "event.h"
-#include "feature.h"
 #include "list_view.h"
 #include "dialog.h"
 #include "choice_explorer.h"
 
 static wchar_t m_current_path[MAX_PATH] = { 0 };
 
-void OpenDialogFolder(void)
+const ListFile* OpenDialogFolder(void)
 {
     wchar_t *chaine = LoadFolderDialog();
 
-    if (chaine == NULL) return;
+    if (chaine == NULL) return NULL;
 
-    ListFile* lf = ScanFilePath(chaine);
-    UpdateListView(lf);
+    const ListFile* lf = ScanFilePath(chaine);
 
     free(chaine);
+
+    return lf;
 }
 
-void LaunchChoiceExplorer(void) {
-
+const ListFile* LaunchChoiceExplorer(void) {
     if (CreateChoiceExplorer(mainHwnd, m_current_path, MAX_PATH))
     {
-        ListFile* lf = ScanFilePath(m_current_path);
-        UpdateListView(lf);
+        return ScanFilePath(m_current_path);
     }
     else
         MessageBox_View(L"No Windows Explorer windows are open.");
+
+    return NULL;
 }

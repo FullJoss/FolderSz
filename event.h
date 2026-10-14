@@ -1,11 +1,12 @@
 #pragma once
+#include "feature.h"
 
 /*
 Role :	Ce fichier va contenir les evenements des boutons lors
 		d'un click gauche
 */
 
-typedef void (*Callback) (void);
+typedef const void* (*Callback) (void);
 
-void LaunchChoiceExplorer(void);
-void OpenDialogFolder(void);
+const ListFile* LaunchChoiceExplorer(void);
+const ListFile* OpenDialogFolder(void);

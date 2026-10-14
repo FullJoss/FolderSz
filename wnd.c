@@ -78,7 +78,7 @@ static inline int OnMouseMove(WPARAM wParam, LPARAM lParam, WindowDataInformatio
     int r = 1;
     for (int i = 0; i < window_info->n_buttons; i++)
     {
-        if (ButtonHitTest(wParam, xPos, yPos, window_info->btnsHead + i))
+        if (ButtonHitTest(wParam, xPos, yPos, window_info->buttons + i))
             r = 0;
     }
 
@@ -90,7 +90,7 @@ static inline int OnLeftButtonDown(WPARAM wParam, LPARAM lParam, WindowDataInfor
 
     for (int i = 0; i < window_info->n_buttons; i++)
     {
-        if (ButtonClickTest(wParam, xPos, yPos, window_info->btnsHead + i))
+        if (ButtonClickTest(wParam, xPos, yPos, window_info->buttons + i))
             return 0;
     }
 
@@ -102,8 +102,10 @@ static inline int OnPaint(WindowDataInformation* window_info) {
 
     HFONT hOldFont = (HFONT)SelectObject(hdc, g_font);
 
+    DrawListFileView(hdc, window_info->lfv);
+
     for (int i = 0; i < window_info->n_buttons; i++)
-        ButtonDraw(hdc, window_info->btnsHead + i);
+        ButtonDraw(hdc, window_info->buttons + i);
 
     SelectObject(hdc, hOldFont);
     EndPaint(mainHwnd, &ps);
@@ -131,14 +133,6 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         return 0;
     }
 
-    case WM_NOTIFY:
-    {
-        if (NotifListView(lParam))
-            return 0;
-
-        break;
-    }
-
     case WM_MOUSEMOVE:
     {
         if (!trackingMouse) {
@@ -162,7 +156,7 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         trackingMouse = FALSE;
 
         for (int i = 0; i < window_info->n_buttons; i++) {
-            window_info->btnsHead[i].state = PBS_NORMAL;
+            window_info->buttons[i].state = PBS_NORMAL;
         }
 
         InvalidateRect(hwnd, NULL, FALSE);

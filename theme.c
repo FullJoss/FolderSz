@@ -14,6 +14,20 @@ HPEN CONST_PEN_SELECTION = NULL;
 
 BOOL isDarkMode = FALSE;
 
+
+typedef enum {
+    Default,
+    AllowDark,
+    ForceDark,
+    ForceLight,
+    Max
+} PreferredAppMode;
+
+// Les fonctions magiques de Windows pour le Dark Mode natif Win32
+typedef PreferredAppMode(WINAPI* pSetPreferredAppMode)(PreferredAppMode appMode);
+typedef BOOL(WINAPI* pAllowDarkModeForWindow)(HWND hwnd, BOOL allow);
+
+
 static inline void FillVarColorDark() {
     g_colors[IC_WINDOW_COLOR] = RGB(25, 25, 25);
 
@@ -109,6 +123,19 @@ void InitTheme()
     CONST_PEN_SELECTION = CreatePen(PS_SOLID, 3, RGB(0, 120, 225));
 
     FillBrushWithColor();
+
+    HMODULE hUxTheme = LoadLibraryExW(L"uxtheme.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if (hUxTheme)
+    {
+        // Ordinal 135 = SetPreferredAppMode
+        pSetPreferredAppMode SetPreferredAppMode =
+            (pSetPreferredAppMode)GetProcAddress(hUxTheme, MAKEINTRESOURCEA(135));
+
+        if (SetPreferredAppMode) {
+            SetPreferredAppMode(ForceDark); // Force le mode sombre pour l'application
+        }
+        FreeLibrary(hUxTheme);
+    }
 }
 
 void FreeTheme()
@@ -124,13 +151,36 @@ void SetListViewTheme(HWND hwnd)
     ListView_SetTextBkColor(hwnd, g_colors[IC_WINDOW_COLOR]);
     ListView_SetTextColor(hwnd, g_colors[IC_TEXT]);
 
-    SetWindowTheme(hwnd, (isDarkMode ? L"DarkMode_Explorer" : L"Explorer"), NULL);
+    HMODULE hUxTheme = LoadLibraryExW(L"uxtheme.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if (hUxTheme)
+    {
+        // Ordinal 133 = AllowDarkModeForWindow
+        pAllowDarkModeForWindow AllowDarkModeForWindow =
+            (pAllowDarkModeForWindow)GetProcAddress(hUxTheme, MAKEINTRESOURCEA(133));
 
-    HWND hwndHeader = ListView_GetHeader(hwnd);
+        if (AllowDarkModeForWindow) {
+            AllowDarkModeForWindow(hwnd, TRUE);
+        }
+
+        // Appliquer le thème pour forcer les Scrollbars à devenir sombres
+        SetWindowTheme(hwnd, L"DarkMode_Explorer", NULL);
+
+        FreeLibrary(hUxTheme);
+    }
+
+    //SetWindowTheme(hwnd, (isDarkMode ? L"DarkMode_Explorer" : L"Explorer"), NULL);
+    SetWindowTheme(hwnd, L"DarkMode_ItemsView", NULL);
+    HWND hHeader = ListView_GetHeader(hwnd);
+
+    // 2. Lui appliquer le thème sombre de l'explorateur
+    if (hHeader) {
+        SetWindowTheme(hHeader, L"DarkMode_ItemsView", NULL); // Ou "DarkMode_Explorer"
+    }
+    /*HWND hwndHeader = ListView_GetHeader(hwnd);
     if (hwndHeader != NULL)
     {
         SetWindowTheme(hwndHeader, L"DarkMode_ItemsView", NULL);
-    }
+    }*/
 }
 
 void SetTitleWindowTheme(HWND hWnd) {

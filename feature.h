@@ -23,15 +23,13 @@ typedef struct {
     unsigned int capacity;
 } ListFile;
 
-typedef const void* StaticPtr;
-
 #define MAX_LISTVIEW_ELEMENT
 
 extern wchar_t *current_path;
 
 wchar_t *LoadFolderDialog();
 
-StaticPtr ScanFilePath(const wchar_t *dossierPath);
+const ListFile* ScanFilePath(const wchar_t *dossierPath);
 
 // Call at cache.c
 void RefreshView();

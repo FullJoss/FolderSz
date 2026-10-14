@@ -9,7 +9,11 @@ typedef enum {
     COLUMN_LISTVIEW_SIZE
 } ColumnListView;
 
-void CreateListView(int x, int y, int width, int height);
+typedef struct {
+    HWND hwnd;
+    ListFile* data;
+    RECT bounds;
+} ListFileView;
 
-BOOL NotifListView(LPARAM lParam);
-void UpdateListView(ListFile* lf);
+void DrawListFileView(HDC hdc, ListFileView* lfv);
+void UpdateListFileView(ListFileView* lfv);

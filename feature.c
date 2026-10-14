@@ -78,7 +78,7 @@ static BOOL ManageMaxCapacity()
     return TRUE;
 }
 
-StaticPtr ScanFilePath(const wchar_t *dossierPath)
+const ListFile* ScanFilePath(const wchar_t *dossierPath)
 {
     HCURSOR hOldCursor = ChangeCursor();
 
@@ -134,7 +134,7 @@ void RefreshView() {
     m_scan_time += deltaTime;
 
     if (m_scan_time >= REFRESH_TIME_SECOND) {
-        UpdateListView(&listFile);
+        //UpdateListView(&listFile);
         m_scan_time -= REFRESH_TIME_SECOND;
     }
 }

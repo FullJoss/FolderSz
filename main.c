@@ -26,7 +26,7 @@ int main()
     InitTheme();
 
     Button buttons[NB_BUTTON];
-    WindowDataInformation info = { buttons, NB_BUTTON };
+    WindowDataInformation info = { buttons, NB_BUTTON, NULL };
     buttons[0] = CreateButton(L"Open a file", OpenDialogFolder);
     buttons[1] = CreateButton(L"Resynchronize with Explorer", LaunchChoiceExplorer);
     mainHwnd = CreateMainWindow(L"JossFileSize", WIN_WIDTH, WIN_HEIGHT, &info);
@@ -36,9 +36,14 @@ int main()
     buttons[0].bounds = GetNextBounds(150, 38, TRUE);
     buttons[1].bounds = GetFinalBounds(WIN_WIDTH, 38, TRUE);
   
-    CreateListView(10, 60, WIN_WIDTH - 10, 600 - 38 - 10 - 10);
+    int y = 38 + 10 + 10;
+    ListFileView lfv;
+    lfv.bounds = (RECT){ 10, y, WIN_WIDTH - 10, WIN_HEIGHT - 10 };
+    lfv.hwnd = mainHwnd;
+    lfv.data = LaunchChoiceExplorer();
+    info.lfv = &lfv;
 
-    LaunchChoiceExplorer();
+    UpdateListFileView(&lfv);
 
     int code = LaunchWindow(mainHwnd);
 
