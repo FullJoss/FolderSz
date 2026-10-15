@@ -1,7 +1,7 @@
 #pragma once
 #include "pch.h"
 
-typedef void (*Callback) (void*);
+typedef void (*Callback) (HWND, void*);
 
 typedef struct
 {
@@ -25,6 +25,11 @@ typedef struct
 } ExplorerInfo;
 
 typedef struct {
+    void* item;
+} RowListView;
+
+typedef struct {
+    RECT padding;
     const wchar_t* name;
     unsigned int width;
     BOOL isSorted;
@@ -49,27 +54,29 @@ typedef struct
 } ElementFile;
 
 typedef struct {
-    ElementFile* file;
+    ElementFile* files;
     unsigned int count;
     unsigned int capacity;
 } ListFile;
 
 typedef struct {
     RECT bounds;
-    HWND hwnd;
-    ListFile* data;
+    RECT itemsArea;
+    RECT sbTrack;
+
+    HRGN clipRgn;
+    ColumnListView* columns;
+    void* rows;
+    size_t row_size;
+    
+    BOOL isDraggingScroll;
+    
     int scrollPos;
     int dragYOffset;
     int indexHover;
-    BOOL isDraggingScroll;
-
-    RECT itemsArea;
-    HRGN clipRgn;
-    RECT sbTrack;
     int sbThumbHeight;
-
-    ColumnListView* columns;
     int n_columns;
+    int n_rows;
 } ListFileView;
 
 typedef struct

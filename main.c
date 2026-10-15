@@ -46,7 +46,7 @@ int main()
 
     int y = 38 + 10 + 10;
     list.bounds = (RECT){ 10, y, WIN_WIDTH - 10, WIN_HEIGHT - 10 };
-    list.hwnd = mainHwnd;
+    list.row_size = sizeof(ElementFile);
     int list_width = list.bounds.right - list.bounds.left;
     int list_width_third = list_width / 3;
     int list_width_fill = list_width - list_width_third;
@@ -66,9 +66,7 @@ int main()
 
 
 
-    LaunchChoiceExplorer(&info);
-
-    UpdateListFileView(&list);
+    LaunchChoiceExplorer(mainHwnd, &info);
 
 
 

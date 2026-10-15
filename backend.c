@@ -125,3 +125,20 @@ IShellItem* Backend_DeployDialogSelector(IFileOpenDialog* pDlg) {
     }
     return pItem;
 }
+
+BOOL GrowCapacity(void** ppArray, int* actualCapacity, size_t elementSize) {
+    int newCapacity = (*actualCapacity * 2) + 1;
+
+    void* tmp = realloc(*ppArray, newCapacity * elementSize);
+
+    if (!tmp) {
+        perror("Error realocation");
+        return FALSE;
+    }
+
+
+    *actualCapacity = newCapacity;
+    *ppArray = tmp;
+
+    return TRUE;
+}

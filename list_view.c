@@ -2,6 +2,7 @@
 #include "feature.h"
 #include "theme.h"
 #include "dialog.h"
+#include "backend.h"
 
 #define CLAMP(val, vmin, vmax) ( ((val) < (vmin)) ? (vmin) : (((val) > (vmax)) ? (vmax) : (val)) )
 #define ROW_HEIGHT          26
@@ -15,12 +16,10 @@
 #define MIN_THUMB_HEIGHT    20
 
 static wchar_t sizeBuffer[32];
-static HWND m_hwnd = NULL;
-static ListFile* m_list;
 
 static inline void DrawHeaderTitle(HDC hdc, ColumnListView* col, int nb_col, RECT bounds);
 static inline void DrawScrollBar(HDC hdc, ListFileView* __restrict lfv, int viewHeight, int totalContentHeight);
-static inline void DrawItem(HDC hdc, ElementFile* __restrict file, RECT rowBounds, RECT itemsArea);
+static inline void DrawItem(HDC hdc, void* __restrict row, RECT rowBounds, RECT itemsArea, ColumnListView* col, int n_col);
 static inline void DrawColumnImageList(HDC hdc, int indexIcon, int paddingLeft, RECT rowBounds, RECT itemsArea);
 static inline void DrawColumnText(HDC hdc, const wchar_t* __restrict text, RECT textBounds);
 static inline RECT GetNextRowBounds(int i, int scrollPos, const RECT area);
@@ -33,7 +32,6 @@ static inline void CalculateItemsArea(ListFileView* lfv);
 static inline void CalculateTrackThumb(ListFileView* lfv);
 static inline RECT GetThumbRect(ListFileView* lfv, int viewHeight, int totalContentHeight);
 static inline void SortListFileView(ListFileView* lfv);
-static inline void SortAt(ListFile* data, ColumnListView* clickedColumn);
 static inline int GetNewScrollPos(int ymouse, ListFileView* lfv);
 
 
@@ -52,17 +50,17 @@ static inline int GetNewScrollPos(int ymouse, ListFileView* lfv);
 
 
 void DrawListFileView(HDC hdc, ListFileView* lfv, RECT rcPaint) {
-    ListFile *list = lfv->data;
 
     FillRect(hdc, &lfv->bounds, g_brushs[IC_BTN_BACKGROUND]);
 
     SetBkMode(hdc, TRANSPARENT);
 
-    if (list && list->count > 0 && list->file)
+    void *rows = lfv->rows;
+    if (rows && lfv->n_rows > 0)
     {
         const RECT itemsArea = lfv->itemsArea;
 
-        int totalContentHeight = list->count * ROW_HEIGHT;
+        int totalContentHeight = lfv->n_rows * ROW_HEIGHT;
         int viewHeight = RectHeight(&itemsArea);
 
         RECT rowBounds = { 0 };
@@ -75,7 +73,7 @@ void DrawListFileView(HDC hdc, ListFileView* lfv, RECT rcPaint) {
 
             rowBounds = GetNextRowBounds(i, lfv->scrollPos, itemsArea);
 
-            ElementFile* file = list->file + i;
+            void* row = ((UINT_PTR)rows) + i * lfv->row_size;
 
             if (rowBounds.bottom < itemsArea.top) continue;
             if (rowBounds.top > itemsArea.bottom) break;
@@ -83,7 +81,7 @@ void DrawListFileView(HDC hdc, ListFileView* lfv, RECT rcPaint) {
             if (i == lfv->indexHover)
                 FillRect(hdc, &rowBounds, g_brushs[IC_BTN_HOVER]);
 
-            DrawItem(hdc, file, rowBounds, itemsArea);
+            DrawItem(hdc, row, rowBounds, itemsArea, lfv->columns, lfv->n_columns);
         }
         
         SelectClipRgn(hdc, NULL);
@@ -101,7 +99,7 @@ void DrawListFileView(HDC hdc, ListFileView* lfv, RECT rcPaint) {
 
 void HandleListViewLButtonDown(HWND hWnd, int x, int y, ListFileView* listView) {
     
-    if (!listView->data) return;
+    if (!listView->rows) return;
     
     POINT pt = { x, y };
 
@@ -111,7 +109,7 @@ void HandleListViewLButtonDown(HWND hWnd, int x, int y, ListFileView* listView) 
     if (!trackClicked)
         return;
 
-    int totalContentHeight = listView->data->count * ROW_HEIGHT;
+    int totalContentHeight = listView->n_rows * ROW_HEIGHT;
     int viewHeight = RectHeight(&listView->bounds);
 
     RECT thumb = GetThumbRect(listView, viewHeight, totalContentHeight);
@@ -177,7 +175,7 @@ void HandleListViewMouseWheel(HWND hWnd, int wheelDelta, LPARAM lParam, ListFile
 
     int newScrollPos = listView->scrollPos - pixelScrollAmount;
 
-    int totalContentHeight = listView->data->count * ROW_HEIGHT;
+    int totalContentHeight = listView->n_rows * ROW_HEIGHT;
     int viewHeight = RectHeight(&listView->itemsArea);
 
     int maxScrollPos = max(0, totalContentHeight - viewHeight);
@@ -206,29 +204,33 @@ void HandleListViewMouseWheel(HWND hWnd, int wheelDelta, LPARAM lParam, ListFile
 
 
 
-
-
-void UpdateListFileView(ListFileView* lfv)
+void UpdateListFileView(HWND hwnd, ListFileView* lfv, ListFile* newlist)
 {
     lfv->scrollPos = 0;
 
-    if (!lfv->data || !lfv->data->count) return;
+    int nb_elem = newlist->count;
 
-    SortListFileView(lfv);
-    
-    CalculateItemsArea(lfv);
+    if (newlist && nb_elem > 0) {
 
-    CalculateTrackThumb(lfv);
-    
-    CalculateClipRegion(lfv);
-    
-    InvalidateRect(lfv->hwnd, &lfv->bounds, FALSE);
+        lfv->rows = newlist->files;
+
+        lfv->n_rows = nb_elem;
+
+        SortListFileView(lfv);
+
+        CalculateItemsArea(lfv);
+
+        CalculateTrackThumb(lfv);
+
+        CalculateClipRegion(lfv);
+    }
+
+    InvalidateRect(hwnd, &lfv->bounds, FALSE);
 }
 
 void FreeListFileView(ListFileView* lfv) {
     if (lfv->clipRgn) DeleteObject(lfv->clipRgn);
 }
-
 
 
 
@@ -289,21 +291,33 @@ static inline void DrawScrollBar(HDC hdc, ListFileView* __restrict lfv, int view
     FillRect(hdc, &sbThumb, g_brushs[iColor]);
 }
 
-static inline void DrawItem(HDC hdc, ElementFile* __restrict file, RECT rowBounds, RECT itemsArea) {
+static inline const wchar_t* GetRowTextElementFile(ElementFile* file, int i_col) {
+    switch (i_col) {
+    case 0:
+        return file->name;
+    case 1:
+        StrFormatByteSizeW(file->size, sizeBuffer, ARRAYSIZE(sizeBuffer));
+        return sizeBuffer;
+    default:
+        return L"-";
+    }
+}
+
+static inline void DrawItem(HDC hdc, void* __restrict row, RECT rowBounds, RECT itemsArea, ColumnListView* col, int n_col) {
+    ElementFile* file = (ElementFile*)row;
     DrawColumnImageList(hdc, file->indexIcon, 5, rowBounds, itemsArea);
 
     RECT textBounds;
 
-    int x_column_0 = 8 + 5 + ICON_SIZE;
-    textBounds = GetNextTextBounds(x_column_0, COLUMN_0_WIDTH, rowBounds, itemsArea);
+    int x = 8 + 5 + ICON_SIZE;
+    const int gap = 5;
+    for (int i = 0; i < n_col; i++) {
 
-    DrawColumnText(hdc, file->name, textBounds);
+        textBounds = GetNextTextBounds(x, col[i].width, rowBounds, itemsArea);
+        DrawColumnText(hdc, GetRowTextElementFile(file, i), textBounds);
 
-    int x_column_1 = x_column_0 + COLUMN_0_WIDTH + 5;
-    textBounds = GetNextTextBounds(x_column_1, COLUMN_0_WIDTH, rowBounds, itemsArea);
-
-    StrFormatByteSizeW(file->size, sizeBuffer, ARRAYSIZE(sizeBuffer));
-    DrawColumnText(hdc, sizeBuffer, textBounds);
+        x += col[i].width + gap;
+    }
 }
 
 static inline void DrawColumnImageList(HDC hdc, int indexIcon, int paddingLeft, RECT rowBounds, RECT itemsArea) {
@@ -344,7 +358,7 @@ static inline int GetHoverIndex(HWND hWnd, int ymouse, ListFileView* lfv) {
 }
 
 static inline int GetNewScrollPos(int ymouse, ListFileView* lfv) {
-    int totalContentHeight = lfv->data->count * ROW_HEIGHT;
+    int totalContentHeight = lfv->n_rows * ROW_HEIGHT;
     int viewHeight = RectHeight(&lfv->itemsArea);
     
     int maxScrollPos = totalContentHeight - viewHeight;
@@ -388,7 +402,7 @@ static inline POINT GetIndexRange(ListFileView* __restrict lfv, RECT rcPaint) {
     unsigned int endIndex = (paintBottomVirtual + fullRowHeight - 1) / fullRowHeight;
 
     if (startIndex < 0) startIndex = 0;
-    if (endIndex >= lfv->data->count) endIndex = lfv->data->count - 1;
+    if (endIndex >= lfv->n_rows) endIndex = lfv->n_rows - 1;
 
     return (POINT){ startIndex, endIndex };
 }
@@ -415,7 +429,7 @@ static inline void CalculateItemsArea(ListFileView* lfv) {
 static inline void CalculateTrackThumb(ListFileView* lfv) {
     RECT itemsArea = lfv->itemsArea;
     RECT bounds = lfv->bounds;
-    int dataCount = lfv->data->count;
+    int dataCount = lfv->n_rows;
 
     lfv->sbTrack = (RECT){ itemsArea.right, itemsArea.top, bounds.right, itemsArea.bottom };
 
@@ -447,11 +461,7 @@ static inline void SortListFileView(ListFileView* lfv) {
         if (sorted) {
             col->isSorted = FALSE;
         } else if (col->isSorted) {
-            SortAt(lfv->data, col);
+            qsort(lfv->rows, lfv->n_rows, sizeof(ElementFile), col->FuncComparison);
         }
     }
-}
-
-static inline void SortAt(ListFile *data, ColumnListView* clickedColumn) {
-    qsort(data->file, data->count, sizeof(ElementFile), clickedColumn->FuncComparison);
 }

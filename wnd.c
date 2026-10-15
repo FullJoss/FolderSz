@@ -71,41 +71,41 @@ int LaunchWindow(HWND hwnd)
     return (UINT)(msg.lParam);
 }
 
-static inline int OnMouseMove(WPARAM wParam, LPARAM lParam, WindowDataInformation* window_info) {
+static inline int OnMouseMove(HWND hwnd, WPARAM wParam, LPARAM lParam, WindowDataInformation* window_info) {
     int xPos = GET_X_LPARAM(lParam);
     int yPos = GET_Y_LPARAM(lParam);
 
-    HandleListViewMouseMove(mainHwnd, xPos, yPos, window_info->lfv);
+    HandleListViewMouseMove(hwnd, xPos, yPos, window_info->lfv);
 
     int r = 1;
     for (int i = 0; i < window_info->n_buttons; i++)
     {
-        if (ButtonHitTest(wParam, xPos, yPos, window_info->buttons + i))
+        if (ButtonHitTest(hwnd, wParam, xPos, yPos, window_info->buttons + i))
             r = 0;
     }
 
     return r;
 }
-static inline int OnLeftButtonDown(WPARAM wParam, LPARAM lParam, WindowDataInformation* window_info) {
+static inline int OnLeftButtonDown(HWND hwnd, WPARAM wParam, LPARAM lParam, WindowDataInformation* window_info) {
     int xPos = GET_X_LPARAM(lParam);
     int yPos = GET_Y_LPARAM(lParam);
 
     if (PtInRect(&window_info->lfv->bounds, (POINT) { xPos, yPos }))
     {
-        HandleListViewLButtonDown(mainHwnd, xPos, yPos, window_info->lfv);
+        HandleListViewLButtonDown(hwnd, xPos, yPos, window_info->lfv);
     }
 
     for (int i = 0; i < window_info->n_buttons; i++)
     {
-        if (ButtonClickTest(wParam, xPos, yPos, window_info->buttons + i, window_info))
+        if (ButtonClickTest(hwnd, wParam, xPos, yPos, window_info->buttons + i, window_info))
             return 0;
     }
 
     return 1;
 }
-static inline int OnPaint(WindowDataInformation* window_info) {
+static inline int OnPaint(HWND hwnd, WindowDataInformation* window_info) {
     PAINTSTRUCT ps;
-    HDC hdc = BeginPaint(mainHwnd, &ps);
+    HDC hdc = BeginPaint(hwnd, &ps);
 
     HFONT hOldFont = (HFONT)SelectObject(hdc, g_font);
 
@@ -115,7 +115,7 @@ static inline int OnPaint(WindowDataInformation* window_info) {
         ButtonDraw(hdc, window_info->buttons + i);
 
     SelectObject(hdc, hOldFont);
-    EndPaint(mainHwnd, &ps);
+    EndPaint(hwnd, &ps);
 
     return 0;
 }
@@ -154,7 +154,7 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
             }
         }
 
-        if (OnMouseMove(wParam, lParam, window_info) == 0)
+        if (OnMouseMove(hwnd, wParam, lParam, window_info) == 0)
             return 0;
 
         break;
@@ -179,7 +179,7 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
     case WM_LBUTTONDOWN:
     {
-        if (OnLeftButtonDown(wParam, lParam, window_info) == 0)
+        if (OnLeftButtonDown(hwnd, wParam, lParam, window_info) == 0)
             return 0;
 
         break;
@@ -193,7 +193,7 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
     case WM_PAINT:
     {
-        OnPaint(window_info);
+        OnPaint(hwnd, window_info);
         break;
     }
 

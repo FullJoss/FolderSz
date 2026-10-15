@@ -7,28 +7,27 @@
 static wchar_t m_current_path[MAX_PATH] = { 0 };
 BOOL g_TriCroissant = TRUE;
 
-void OpenDialogFolder(WindowDataInformation* pData)
+void OpenDialogFolder(HWND hwnd, WindowDataInformation* pData)
 {
-    //WindowDataInformation* pData = (WindowDataInformation*)GetWindowLongPtr(mainHwnd, GWLP_USERDATA);
     ListFileView* lfv = pData->lfv;
 
     wchar_t *chaine = LoadFolderDialog();
 
     if (chaine == NULL) return;
 
-    lfv->data = ScanFilePath(chaine);
-    UpdateListFileView(lfv);
+    ListFile* list = ScanFilePath(chaine);
+    UpdateListFileView(hwnd, lfv, list);
 
     free(chaine);
 }
 
-void LaunchChoiceExplorer(WindowDataInformation* pData) {
+void LaunchChoiceExplorer(HWND hwnd, WindowDataInformation* pData) {
     ListFileView* lfv = pData->lfv;
 
     if (CreateChoiceExplorer(mainHwnd, m_current_path, MAX_PATH))
     {
-        lfv->data = ScanFilePath(m_current_path);
-        UpdateListFileView(lfv);
+        ListFile* list = ScanFilePath(m_current_path);
+        UpdateListFileView(hwnd, lfv, list);
     }
     else
         MessageBox_View(L"No Windows Explorer windows are open.");

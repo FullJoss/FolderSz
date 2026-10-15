@@ -15,7 +15,7 @@ Button CreateButton(const wchar_t* name, Callback event) {
     return btn;
 }
 
-BOOL ButtonHitTest(WPARAM wParam, int x, int y, Button *button)
+BOOL ButtonHitTest(HWND hwnd, WPARAM wParam, int x, int y, Button *button)
 {
     BOOL isOver = PtInRect(&button->bounds, (POINT){x, y});
     int newstate = GetButtonState(wParam, isOver);
@@ -23,13 +23,13 @@ BOOL ButtonHitTest(WPARAM wParam, int x, int y, Button *button)
     if (newstate != button->state)
     {
         button->state = newstate;
-        InvalidateRect(mainHwnd, &button->bounds, FALSE);
+        InvalidateRect(hwnd, &button->bounds, FALSE);
     }
 
     return isOver;
 }
 
-BOOL ButtonClickTest(WPARAM wParam, int x, int y, Button* button, WindowDataInformation* pData)
+BOOL ButtonClickTest(HWND hwnd, WPARAM wParam, int x, int y, Button* button, WindowDataInformation* pData)
 {
     if (wParam & MK_LBUTTON)
     {
@@ -37,7 +37,7 @@ BOOL ButtonClickTest(WPARAM wParam, int x, int y, Button* button, WindowDataInfo
 
         if (PtInRect(&button->bounds, p))
         {
-            button->on_click(pData);
+            button->on_click(hwnd, pData);
             return TRUE;
         }
     }

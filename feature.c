@@ -59,20 +59,20 @@ static BOOL ManageMaxCapacity()
     {
         capacity = 2 * capacity + 1;
 
-        ElementFile *tmp = (ElementFile *)realloc(listFile.file, capacity * sizeof(ElementFile));
+        ElementFile *tmp = (ElementFile *)realloc(listFile.files, capacity * sizeof(ElementFile));
 
         if (tmp == NULL)
         {
             listFile.capacity = 0;
 
-            if (listFile.file) 
-                free(listFile.file);
+            if (listFile.files) 
+                free(listFile.files);
 
             perror("listFile allocation failed!");
             return FALSE;
         }
 
-        listFile.file = tmp;
+        listFile.files = tmp;
         listFile.capacity = capacity;
     }
     return TRUE;
@@ -111,7 +111,7 @@ ListFile* ScanFilePath(const wchar_t *dossierPath)
             if (!ManageMaxCapacity())
                 break;
 
-            ElementFile* element = &listFile.file[listFile.count - 1];
+            ElementFile* element = &listFile.files[listFile.count - 1];
             wcscpy_s(element->name, MAX_PATH, findData.cFileName);
 
             wchar_t cheminComplet[MAX_PATH];
