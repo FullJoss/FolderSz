@@ -32,7 +32,7 @@ static inline void CalculateTrackThumb(ListFileView* lfv);
 static inline RECT GetThumbRect(ListFileView* lfv, int viewHeight, int totalContentHeight);
 static inline void SortListFileView(ListFileView* lfv);
 static inline void SortAt(ListFile* data, ColumnListView* clickedColumn);
-
+static inline int GetNewScrollPos(int ymouse, ListFileView* lfv);
 
 
 
@@ -96,21 +96,32 @@ void DrawListFileView(HDC hdc, ListFileView* lfv, RECT rcPaint) {
 
 void HandleListViewLButtonDown(HWND hWnd, int x, int y, ListFileView* listView) {
     
-    int totalContentHeight = listView->data->count * ROW_HEIGHT;
-    int viewHeight = RectHeight(&listView->bounds);
+    if (!listView->data) return;
     
-    RECT thumb = GetThumbRect(listView, viewHeight, totalContentHeight);
     POINT pt = { x, y };
 
+    BOOL trackClicked = PtInRect(&listView->sbTrack, pt);
+    
+    // Thumb is in the Track
+    if (!trackClicked)
+        return;
+
+    int totalContentHeight = listView->data->count * ROW_HEIGHT;
+    int viewHeight = RectHeight(&listView->bounds);
+
+    RECT thumb = GetThumbRect(listView, viewHeight, totalContentHeight);
+
+    listView->isDraggingScroll = TRUE;
     if (PtInRect(&thumb, pt)) {
-        listView->isDraggingScroll = TRUE;
         listView->dragYOffset = y - thumb.top;
 
         // Drag out window
-        SetCapture(hWnd); 
-
-        InvalidateRect(hWnd, &listView->bounds, FALSE);
+        SetCapture(hWnd);
     }
+    else 
+        listView->scrollPos = GetNewScrollPos(pt.y, listView);
+
+    InvalidateRect(hWnd, &listView->bounds, FALSE);
 }
 
 void HandleListViewMouseMove(HWND hWnd, int x, int y, ListFileView* listView) {
@@ -124,24 +135,7 @@ void HandleListViewMouseMove(HWND hWnd, int x, int y, ListFileView* listView) {
     
     if (!listView->isDraggingScroll) return;
 
-    int totalContentHeight = listView->data->count * ROW_HEIGHT;
-    int viewHeight = RectHeight(&listView->bounds);
-
-    int maxScrollPos = totalContentHeight - viewHeight;
-
-    RECT thumb = GetThumbRect(listView, viewHeight, totalContentHeight);
-    int thumbHeight = RectHeight(&thumb);
-    
-    int maxThumbY = viewHeight - thumbHeight;
-
-    int proposedThumbTop = y - listView->dragYOffset - listView->bounds.top;
-    proposedThumbTop = CLAMP(proposedThumbTop, 0, maxThumbY);
-
-    /*
-        maxScrollPos        ==>      maxThumbY
-        newScrollPos ??     <==      proposedThumbTop
-    */
-    int newScrollPos = (proposedThumbTop * maxScrollPos) / maxThumbY;
+    int newScrollPos = GetNewScrollPos(y, listView);
 
     if (newScrollPos != listView->scrollPos) {
         listView->scrollPos = newScrollPos;
@@ -212,6 +206,8 @@ void HandleListViewMouseWheel(HWND hWnd, int wheelDelta, LPARAM lParam, ListFile
 void UpdateListFileView(ListFileView* lfv)
 {
     lfv->scrollPos = 0;
+
+    if (!lfv->data || !lfv->data->count) return;
 
     SortListFileView(lfv);
     
@@ -306,6 +302,26 @@ static inline int GetHoverIndex(HWND hWnd, int ymouse, ListFileView* lfv) {
     return newhoverI;
 }
 
+static inline int GetNewScrollPos(int ymouse, ListFileView* lfv) {
+    int totalContentHeight = lfv->data->count * ROW_HEIGHT;
+    int viewHeight = RectHeight(&lfv->itemsArea);
+    
+    int maxScrollPos = totalContentHeight - viewHeight;
+
+    int thumbHeight = lfv->sbThumbHeight;
+
+    int maxThumbY = viewHeight - thumbHeight;
+
+    int proposedThumbTop = ymouse - lfv->dragYOffset - lfv->bounds.top;
+    proposedThumbTop = CLAMP(proposedThumbTop, 0, maxThumbY);
+
+    /*
+        maxScrollPos        ==>      maxThumbY
+        newScrollPos ??     <==      proposedThumbTop
+    */
+    return (proposedThumbTop * maxScrollPos) / maxThumbY;
+}
+
 static inline void InvalidatePairItem(HWND hwnd, RECT bounds, int scrollPos, int i1, int i2) {
     RECT lastR = bounds;
     lastR.top += (i1 * (ROW_HEIGHT + VERT_ITEM_SPACE)) - scrollPos;
@@ -322,8 +338,6 @@ static inline void InvalidatePairItem(HWND hwnd, RECT bounds, int scrollPos, int
 static inline POINT GetIndexRange(ListFileView* __restrict lfv, RECT rcPaint) {
     int paintTopVirtual = (rcPaint.top - lfv->bounds.top) + lfv->scrollPos;
     int paintBottomVirtual = (rcPaint.bottom - lfv->bounds.top) + lfv->scrollPos;
-
-    DEBUG_PRINT(L"RECT rcpaint: %dx%d", rcPaint.right - rcPaint.left, rcPaint.bottom - rcPaint.top);
 
     int fullRowHeight = ROW_HEIGHT + VERT_ITEM_SPACE;
 

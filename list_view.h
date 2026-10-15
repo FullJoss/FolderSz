@@ -1,31 +1,7 @@
 #pragma once
 #include "pch.h"
+#include "type.h"
 #include "feature.h"
-
-typedef struct {
-    const wchar_t* name;
-    unsigned int width;
-    BOOL isSorted;
-    int (*FuncComparison) (const void*, const void*);
-} ColumnListView;
-
-typedef struct {
-    RECT bounds;
-    HWND hwnd;
-    ListFile* data;
-    int scrollPos;
-    int dragYOffset;
-    int indexHover;
-    BOOL isDraggingScroll; 
-
-    RECT itemsArea;
-    HRGN clipRgn;
-    RECT sbTrack;
-    int sbThumbHeight;
-
-    ColumnListView* columns;
-    int n_columns;
-} ListFileView;
 
 void DrawListFileView(HDC hdc, ListFileView* lfv, RECT rcPaint);
 void HandleListViewLButtonUp(HWND hWnd, ListFileView* listView);

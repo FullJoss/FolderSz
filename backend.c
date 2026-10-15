@@ -1,7 +1,4 @@
-#include <windows.h>
-#include <exdisp.h>
-#include <shlobj.h>
-#include "choice_explorer.h"
+#include "backend.h"
 
 #define SAFE_RELEASE(p) do { if (p) { (p)->lpVtbl->Release(p); (p) = NULL; } } while(0)
 

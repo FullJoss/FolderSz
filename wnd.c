@@ -90,11 +90,14 @@ static inline int OnLeftButtonDown(WPARAM wParam, LPARAM lParam, WindowDataInfor
     int xPos = GET_X_LPARAM(lParam);
     int yPos = GET_Y_LPARAM(lParam);
 
-    HandleListViewLButtonDown(mainHwnd, xPos, yPos, window_info->lfv);
+    if (PtInRect(&window_info->lfv->bounds, (POINT) { xPos, yPos }))
+    {
+        HandleListViewLButtonDown(mainHwnd, xPos, yPos, window_info->lfv);
+    }
 
     for (int i = 0; i < window_info->n_buttons; i++)
     {
-        if (ButtonClickTest(wParam, xPos, yPos, window_info->buttons + i))
+        if (ButtonClickTest(wParam, xPos, yPos, window_info->buttons + i, window_info))
             return 0;
     }
 

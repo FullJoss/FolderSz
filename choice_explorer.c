@@ -1,6 +1,7 @@
 ﻿#include "choice_explorer.h"
 #include "theme.h"
 #include "backend.h"
+#include "type.h"
 
 #pragma comment(lib, "dwmapi.lib")
 
@@ -22,6 +23,12 @@ static BOOL m_thumbnail_hover = FALSE;
 #define THUMBNAIL_GAP 30
 #define THUMBNAIL_LABEL_H 10
 #define COLUMN_MAX 3
+
+typedef enum {
+    SEARCH_RESULT_NONE,
+    SEARCH_RESULT_UNIQUE,
+    SEARCH_RESULT_MULTIPLE
+} SearchResult;
 
 SearchResult SearchOpenExplorer(wchar_t* outPath, DWORD maxLen);
 static inline void CreateClassRegistration(const wchar_t* classname, HINSTANCE hInst);

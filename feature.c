@@ -78,7 +78,7 @@ static BOOL ManageMaxCapacity()
     return TRUE;
 }
 
-const ListFile* ScanFilePath(const wchar_t *dossierPath)
+ListFile* ScanFilePath(const wchar_t *dossierPath)
 {
     HCURSOR hOldCursor = ChangeCursor();
 

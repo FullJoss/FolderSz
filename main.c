@@ -30,14 +30,15 @@ int main()
     Button buttons[NB_BUTTON];
     ListFileView list = { 0 };
     WindowDataInformation info = { buttons, NB_BUTTON, &list };
-    buttons[0] = CreateButton(L"Open a file", OpenDialogFolder);
-    buttons[1] = CreateButton(L"Resynchronize with Explorer", LaunchChoiceExplorer);
     mainHwnd = CreateMainWindow(L"JossFileSize", WIN_WIDTH, WIN_HEIGHT, &info);
 
 
     SetY(10);
     SetMargin(10);
+    buttons[0] = CreateButton(L"Open a file", OpenDialogFolder);
     buttons[0].bounds = GetNextBounds(150, 38, TRUE);
+
+    buttons[1] = CreateButton(L"Resynchronize with Explorer", LaunchChoiceExplorer);
     buttons[1].bounds = GetFinalBounds(WIN_WIDTH, 38, TRUE);
   
 
@@ -60,7 +61,8 @@ int main()
     int y = 38 + 10 + 10;
     list.bounds = (RECT){ 10, y, WIN_WIDTH - 10, WIN_HEIGHT - 10 };
     list.hwnd = mainHwnd;
-    list.data = LaunchChoiceExplorer();
+
+    LaunchChoiceExplorer(&info);
 
     UpdateListFileView(&list);
 

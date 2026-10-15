@@ -7,28 +7,31 @@
 static wchar_t m_current_path[MAX_PATH] = { 0 };
 BOOL g_TriCroissant = TRUE;
 
-const ListFile* OpenDialogFolder(void)
+void OpenDialogFolder(WindowDataInformation* pData)
 {
+    //WindowDataInformation* pData = (WindowDataInformation*)GetWindowLongPtr(mainHwnd, GWLP_USERDATA);
+    ListFileView* lfv = pData->lfv;
+
     wchar_t *chaine = LoadFolderDialog();
 
-    if (chaine == NULL) return NULL;
+    if (chaine == NULL) return;
 
-    const ListFile* lf = ScanFilePath(chaine);
+    lfv->data = ScanFilePath(chaine);
+    UpdateListFileView(lfv);
 
     free(chaine);
-
-    return lf;
 }
 
-const ListFile* LaunchChoiceExplorer(void) {
+void LaunchChoiceExplorer(WindowDataInformation* pData) {
+    ListFileView* lfv = pData->lfv;
+
     if (CreateChoiceExplorer(mainHwnd, m_current_path, MAX_PATH))
     {
-        return ScanFilePath(m_current_path);
+        lfv->data = ScanFilePath(m_current_path);
+        UpdateListFileView(lfv);
     }
     else
         MessageBox_View(L"No Windows Explorer windows are open.");
-
-    return NULL;
 }
 
 static inline int CompareByDirectory(ElementFile* A, ElementFile* B) {

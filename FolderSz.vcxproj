@@ -164,6 +164,7 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="theme.h" />
     <ClInclude Include="tick.h" />
+    <ClInclude Include="type.h" />
     <ClInclude Include="wnd.h" />
   </ItemGroup>
   <ItemGroup>

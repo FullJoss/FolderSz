@@ -1,10 +1,6 @@
 #include "button.h"
 #include "theme.h"
 
-BOOL ButtonHitTest(WPARAM wParam, int x, int y, Button* button);
-BOOL ButtonClickTest(WPARAM wParam, int x, int y, Button* button);
-void ButtonDraw(HDC hdc, Button* button);
-
 static inline void DrawBorder(HDC hdc, Button* button);
 static inline void WriteText(HDC hdc, Button* button);
 static inline void DrawBackground(HDC hdc, Button* button);
@@ -33,7 +29,7 @@ BOOL ButtonHitTest(WPARAM wParam, int x, int y, Button *button)
     return isOver;
 }
 
-BOOL ButtonClickTest(WPARAM wParam, int x, int y, Button *button)
+BOOL ButtonClickTest(WPARAM wParam, int x, int y, Button* button, WindowDataInformation* pData)
 {
     if (wParam & MK_LBUTTON)
     {
@@ -41,7 +37,7 @@ BOOL ButtonClickTest(WPARAM wParam, int x, int y, Button *button)
 
         if (PtInRect(&button->bounds, p))
         {
-            button->on_click();
+            button->on_click(pData);
             return TRUE;
         }
     }
