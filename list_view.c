@@ -10,6 +10,7 @@
 #define ICON_PADDING        6
 #define TEXT_PADDING        10
 #define SCROLLBAR_WIDTH     14
+#define COL_HEADER_HEIGHT   34
 #define VERT_ITEM_SPACE     2
 #define MIN_THUMB_HEIGHT    20
 
@@ -17,6 +18,7 @@ static wchar_t sizeBuffer[32];
 static HWND m_hwnd = NULL;
 static ListFile* m_list;
 
+static inline void DrawHeaderTitle(HDC hdc, ColumnListView* col, int nb_col, RECT bounds);
 static inline void DrawScrollBar(HDC hdc, ListFileView* __restrict lfv, int viewHeight, int totalContentHeight);
 static inline void DrawItem(HDC hdc, ElementFile* __restrict file, RECT rowBounds, RECT itemsArea);
 static inline void DrawColumnImageList(HDC hdc, int indexIcon, int paddingLeft, RECT rowBounds, RECT itemsArea);
@@ -51,46 +53,49 @@ static inline int GetNewScrollPos(int ymouse, ListFileView* lfv);
 
 void DrawListFileView(HDC hdc, ListFileView* lfv, RECT rcPaint) {
     ListFile *list = lfv->data;
-    if (!list) return;
-
-    SelectClipRgn(hdc, lfv->clipRgn);
 
     FillRect(hdc, &lfv->bounds, g_brushs[IC_BTN_BACKGROUND]);
 
-    if (list->count <= 0 || !list->file)
-        return;
-
-    const RECT itemsArea = lfv->itemsArea;
-
-    int totalContentHeight = list->count * ROW_HEIGHT;
-    int viewHeight = RectHeight(&itemsArea);
-
     SetBkMode(hdc, TRANSPARENT);
 
-    RECT rowBounds = { 0 };
+    if (list && list->count > 0 && list->file)
+    {
+        const RECT itemsArea = lfv->itemsArea;
 
-    POINT i_range = GetIndexRange(lfv, rcPaint);
+        int totalContentHeight = list->count * ROW_HEIGHT;
+        int viewHeight = RectHeight(&itemsArea);
 
-    for (int i = i_range.x; i < i_range.y; i++) {
+        RECT rowBounds = { 0 };
 
-        rowBounds = GetNextRowBounds(i, lfv->scrollPos, itemsArea);
+        POINT i_range = GetIndexRange(lfv, rcPaint);
 
-        ElementFile* file = list->file + i;
+        SelectClipRgn(hdc, lfv->clipRgn);
+        
+        for (int i = i_range.x; i < i_range.y; i++) {
 
-        if (rowBounds.bottom < itemsArea.top) continue;
-        if (rowBounds.top > itemsArea.bottom) break;
+            rowBounds = GetNextRowBounds(i, lfv->scrollPos, itemsArea);
 
-        if (i == lfv->indexHover)
-            FillRect(hdc, &rowBounds, g_brushs[IC_BTN_HOVER]);
+            ElementFile* file = list->file + i;
 
-        DrawItem(hdc, file, rowBounds, itemsArea);
+            if (rowBounds.bottom < itemsArea.top) continue;
+            if (rowBounds.top > itemsArea.bottom) break;
+
+            if (i == lfv->indexHover)
+                FillRect(hdc, &rowBounds, g_brushs[IC_BTN_HOVER]);
+
+            DrawItem(hdc, file, rowBounds, itemsArea);
+        }
+        
+        SelectClipRgn(hdc, NULL);
+
+        if (totalContentHeight > viewHeight) {
+            DrawScrollBar(hdc, lfv, viewHeight, totalContentHeight);
+        }
     }
 
-    if (totalContentHeight > viewHeight) {
-        DrawScrollBar(hdc, lfv, viewHeight, totalContentHeight);
-    }
+    DrawHeaderTitle(hdc, lfv->columns, lfv->n_columns, lfv->bounds);
 
-    SelectClipRgn(hdc, NULL);
+    FrameRect(hdc, &lfv->bounds, g_brushs[IC_BTN_BORDER]);
 }
 
 
@@ -129,7 +134,7 @@ void HandleListViewMouseMove(HWND hWnd, int x, int y, ListFileView* listView) {
     int newIHover = GetHoverIndex(hWnd, y, listView);
     if (newIHover != listView->indexHover)
     {
-        InvalidatePairItem(hWnd, listView->bounds, listView->scrollPos, newIHover, listView->indexHover);
+        InvalidatePairItem(hWnd, listView->itemsArea, listView->scrollPos, newIHover, listView->indexHover);
         listView->indexHover = newIHover;
     }
     
@@ -173,7 +178,7 @@ void HandleListViewMouseWheel(HWND hWnd, int wheelDelta, LPARAM lParam, ListFile
     int newScrollPos = listView->scrollPos - pixelScrollAmount;
 
     int totalContentHeight = listView->data->count * ROW_HEIGHT;
-    int viewHeight = RectHeight(&listView->bounds);
+    int viewHeight = RectHeight(&listView->itemsArea);
 
     int maxScrollPos = max(0, totalContentHeight - viewHeight);
 
@@ -237,7 +242,43 @@ void FreeListFileView(ListFileView* lfv) {
 
 
 
+static inline void DrawHeaderTitle(HDC hdc, ColumnListView* col, int nb_col, RECT bounds) {
+    
+    if (!col || nb_col == 0) return;
+    
+    RECT headerZone = bounds;
+    headerZone.right -= SCROLLBAR_WIDTH;
+    headerZone.bottom = bounds.top + COL_HEADER_HEIGHT;
 
+    SetTextColor(hdc, g_colors[IC_TEXT]);
+
+    const int padding_left = 20;
+    int lastX = headerZone.left;
+
+    RECT titleZone = headerZone;
+    RECT textZone = headerZone;
+
+    for (int i = 0; i < nb_col; i++) {
+
+        titleZone.left = lastX;
+        titleZone.right = lastX + col[i].width;
+
+        titleZone.left = max(titleZone.left, bounds.left);
+        titleZone.right = min(titleZone.right, bounds.right);
+
+        FrameRect(hdc, &titleZone, g_brushs[IC_BTN_BORDER]);
+
+        textZone.left = lastX + padding_left;
+        textZone.right = lastX + padding_left + col[i].width;
+
+        textZone.left = max(textZone.left, bounds.left);
+        textZone.right = min(textZone.right, bounds.right);
+
+        DrawTextW(hdc, col[i].name, -1, &textZone, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+        
+        lastX += col[i].width;
+    }
+}
 
 static inline void DrawScrollBar(HDC hdc, ListFileView* __restrict lfv, int viewHeight, int totalContentHeight) {
     FillRect(hdc, &lfv->sbTrack, g_brushs[IC_BTN_HOVER]);
@@ -294,7 +335,7 @@ static inline RECT GetNextTextBounds(int x, int width, RECT rowBounds, RECT item
 }
 
 static inline int GetHoverIndex(HWND hWnd, int ymouse, ListFileView* lfv) {
-    int localY = ymouse - lfv->bounds.top;
+    int localY = ymouse - lfv->itemsArea.top;
     int virtualY = localY + lfv->scrollPos;
 
     int newhoverI = virtualY / (ROW_HEIGHT + VERT_ITEM_SPACE);
@@ -312,7 +353,7 @@ static inline int GetNewScrollPos(int ymouse, ListFileView* lfv) {
 
     int maxThumbY = viewHeight - thumbHeight;
 
-    int proposedThumbTop = ymouse - lfv->dragYOffset - lfv->bounds.top;
+    int proposedThumbTop = ymouse - lfv->dragYOffset - lfv->itemsArea.top;
     proposedThumbTop = CLAMP(proposedThumbTop, 0, maxThumbY);
 
     /*
@@ -322,12 +363,12 @@ static inline int GetNewScrollPos(int ymouse, ListFileView* lfv) {
     return (proposedThumbTop * maxScrollPos) / maxThumbY;
 }
 
-static inline void InvalidatePairItem(HWND hwnd, RECT bounds, int scrollPos, int i1, int i2) {
-    RECT lastR = bounds;
+static inline void InvalidatePairItem(HWND hwnd, RECT area, int scrollPos, int i1, int i2) {
+    RECT lastR = area;
     lastR.top += (i1 * (ROW_HEIGHT + VERT_ITEM_SPACE)) - scrollPos;
     lastR.bottom = lastR.top + ROW_HEIGHT;
 
-    RECT newR = bounds;
+    RECT newR = area;
     newR.top += (i2 * (ROW_HEIGHT + VERT_ITEM_SPACE)) - scrollPos;
     newR.bottom = newR.top + ROW_HEIGHT;
 
@@ -336,8 +377,8 @@ static inline void InvalidatePairItem(HWND hwnd, RECT bounds, int scrollPos, int
 }
 
 static inline POINT GetIndexRange(ListFileView* __restrict lfv, RECT rcPaint) {
-    int paintTopVirtual = (rcPaint.top - lfv->bounds.top) + lfv->scrollPos;
-    int paintBottomVirtual = (rcPaint.bottom - lfv->bounds.top) + lfv->scrollPos;
+    int paintTopVirtual = (rcPaint.top - lfv->itemsArea.top) + lfv->scrollPos;
+    int paintBottomVirtual = (rcPaint.bottom - lfv->itemsArea.top) + lfv->scrollPos;
 
     int fullRowHeight = ROW_HEIGHT + VERT_ITEM_SPACE;
 
@@ -362,11 +403,12 @@ static inline void CalculateClipRegion(ListFileView* lfv) {
             return;
     }
 
-    lfv->clipRgn = CreateRectRgnIndirect(&lfv->bounds);
+    lfv->clipRgn = CreateRectRgnIndirect(&lfv->itemsArea);
 }
 
 static inline void CalculateItemsArea(ListFileView* lfv) {
     lfv->itemsArea = lfv->bounds;
+    lfv->itemsArea.top += COL_HEADER_HEIGHT;
     lfv->itemsArea.right -= SCROLLBAR_WIDTH;
 }
 
@@ -375,10 +417,10 @@ static inline void CalculateTrackThumb(ListFileView* lfv) {
     RECT bounds = lfv->bounds;
     int dataCount = lfv->data->count;
 
-    lfv->sbTrack = (RECT){ itemsArea.right, bounds.top, bounds.right, bounds.bottom };
+    lfv->sbTrack = (RECT){ itemsArea.right, itemsArea.top, bounds.right, itemsArea.bottom };
 
     int totalContentHeight = dataCount * ROW_HEIGHT;
-    int viewHeight = itemsArea.bottom - itemsArea.top;
+    int viewHeight = RectHeight(&itemsArea);
 
     int thumbHeight = (viewHeight * viewHeight) / totalContentHeight;
 

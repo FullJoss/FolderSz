@@ -44,13 +44,20 @@ int main()
 
 
 
+    int y = 38 + 10 + 10;
+    list.bounds = (RECT){ 10, y, WIN_WIDTH - 10, WIN_HEIGHT - 10 };
+    list.hwnd = mainHwnd;
+    int list_width = list.bounds.right - list.bounds.left;
+    int list_width_third = list_width / 3;
+    int list_width_fill = list_width - list_width_third;
+
     ColumnListView columns[NB_LIST_COLUMN] = { 0 };
     columns[0].name = L"Name";
-    columns[0].width = 300;
+    columns[0].width = list_width_fill;
     columns[0].FuncComparison = CompareByName;
 
     columns[1].name = L"Size";
-    columns[1].width = 300;
+    columns[1].width = list_width_third;
     columns[1].FuncComparison = CompareBySize;
     columns[1].isSorted = TRUE;
 
@@ -58,9 +65,6 @@ int main()
     list.n_columns = NB_LIST_COLUMN;
 
 
-    int y = 38 + 10 + 10;
-    list.bounds = (RECT){ 10, y, WIN_WIDTH - 10, WIN_HEIGHT - 10 };
-    list.hwnd = mainHwnd;
 
     LaunchChoiceExplorer(&info);
 
