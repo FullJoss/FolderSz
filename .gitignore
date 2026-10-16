@@ -9,3 +9,4 @@ compiler.bat
 *.obj
 *.bin
 *.dat
+*.cache
