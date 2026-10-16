@@ -16,8 +16,11 @@
 static wchar_t sizeBuffer[32];
 static int ROW_HEIGHT = 26;
 static int ICON_SIZE = 16;
+static int ARROW_WIDTH = 10;
+static int ARROW_HEIGHT = 6;
+static int ARROW_MARGE_RIGHT = 10;
 
-static inline void DrawHeaderTitle(HDC hdc, ColumnListView* col, int nb_col, RECT bounds, int indxHover);
+static inline void DrawHeaderTitle(HDC hdc, ColumnListView* col, int nb_col, RECT bounds, int indexHover, int indexSort, BOOL isAscending);
 static inline void DrawScrollBar(HDC hdc, ListFileView* __restrict lfv, int viewHeight, int totalContentHeight);
 static inline void DrawItem(HDC hdc, void* __restrict row, RECT rowBounds, RECT itemsArea, ColumnListView* col, int n_col);
 static inline void DrawColumnImageList(HDC hdc, int indexIcon, int paddingLeft, RECT rowBounds, RECT itemsArea);
@@ -36,7 +39,7 @@ static inline void SortListFileView(ListFileView* lfv);
 static inline int GetNewScrollPos(int ymouse, ListFileView* lfv);
 static void CustomSort(void* tab, size_t nb, size_t sizeElem, CallbackSort funcSort, BOOL isAscending);
 static inline int FindIndexHeaderTitle(int x, int initial, ColumnListView* col, int nCol);
-
+void DrawSortArrow(HDC hdc, RECT rcColumn, BOOL isAscending);
 
 
 
@@ -95,7 +98,7 @@ void DrawListFileView(HDC hdc, ListFileView* lfv, RECT rcPaint) {
 
     FrameRect(hdc, &lfv->bounds, g_brushs[IC_BTN_BORDER]);
 
-    DrawHeaderTitle(hdc, lfv->columns, lfv->n_columns, lfv->bounds, lfv->indexColHover);
+    DrawHeaderTitle(hdc, lfv->columns, lfv->n_columns, lfv->bounds, lfv->indexColHover, lfv->indexColSort, lfv->ascendingSort);
 }
 
 
@@ -240,6 +243,9 @@ void UpdateListFileView(HWND hwnd, ListFileView* lfv, ListFile* newlist)
     // DPI
     ROW_HEIGHT = DPI_CONST(26);
     ICON_SIZE = DPI_CONST(16);
+    ARROW_WIDTH = DPI_CONST(10);
+    ARROW_HEIGHT = DPI_CONST(6);
+    ARROW_MARGE_RIGHT = DPI_CONST(10);
 
     lfv->scrollPos = 0;
     lfv->indexColHover = -1;
@@ -288,7 +294,7 @@ void FreeListFileView(ListFileView* lfv) {
 
 
 
-static inline void DrawHeaderTitle(HDC hdc, ColumnListView* col, int nb_col, RECT bounds, int indexHover) {
+static inline void DrawHeaderTitle(HDC hdc, ColumnListView* col, int nb_col, RECT bounds, int indexHover, int indexSort, BOOL isAscending) {
     
     if (!col || nb_col == 0) return;
     
@@ -316,6 +322,10 @@ static inline void DrawHeaderTitle(HDC hdc, ColumnListView* col, int nb_col, REC
         }
         else {
             FrameRect(hdc, &titleZone, g_brushs[IC_BTN_BORDER]);
+        }
+
+        if (i == indexSort) {
+            DrawSortArrow(hdc, titleZone, isAscending);
         }
         
         DrawTextW(hdc, col[i].name, -1, &textZone, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
@@ -573,4 +583,34 @@ static void CustomSort(void* tab, size_t nb, size_t sizeElem, CallbackSort funcS
     }
 
     free(temp);
+}
+
+// ============================================================================
+// RESPONSABILITÉ : Dessine une petite flèche de tri (triangle plein) en GDI
+// ============================================================================
+void DrawSortArrow(HDC hdc, RECT rcColumn, BOOL isAscending) {
+
+    int centerY = rcColumn.top + ((rcColumn.bottom - rcColumn.top) - ARROW_HEIGHT) / 2;
+    int arrowRight = rcColumn.right - ARROW_MARGE_RIGHT;
+    int arrowLeft = arrowRight - ARROW_WIDTH;
+
+    POINT points[3];
+    if (isAscending) {
+        points[0].x = arrowLeft + (ARROW_WIDTH / 2); points[0].y = centerY;                 // Sommet
+        points[1].x = arrowLeft;                    points[1].y = centerY + ARROW_HEIGHT;   // Bas Gauche
+        points[2].x = arrowRight;                   points[2].y = centerY + ARROW_HEIGHT;   // Bas Droite
+    }
+    else {
+        points[0].x = arrowLeft;                    points[0].y = centerY;                 // Haut Gauche
+        points[1].x = arrowRight;                   points[1].y = centerY;                 // Haut Droite
+        points[2].x = arrowLeft + (ARROW_WIDTH / 2); points[2].y = centerY + ARROW_HEIGHT;   // Pointe Bas
+    }
+
+    HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, g_brushs[IC_BTN_HOVER_BORDER]);
+    HPEN hOldPen = (HPEN)SelectObject(hdc, GetStockObject(NULL_PEN));
+
+    Polygon(hdc, points, 3);
+
+    SelectObject(hdc, hOldBrush);
+    SelectObject(hdc, hOldPen);
 }
