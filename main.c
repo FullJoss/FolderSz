@@ -35,37 +35,33 @@ int main()
 
     DPI_VALUE = GetDpiForWindowSafe(mainHwnd);
 
-    SetY(10);
-    SetMargin(10);
-    buttons[0] = CreateButton(L"Open a file", OpenDialogFolder);
-    buttons[0].bounds = GetNextBounds(150, 38, TRUE);
-
+    buttons[0] = CreateButton(L"Open foler", OpenDialogFolder);
     buttons[1] = CreateButton(L"Resynchronize with Explorer", LaunchChoiceExplorer);
-    buttons[1].bounds = GetFinalBounds(WIN_WIDTH, 38, TRUE);
   
 
 
+    InitLayout(WIN_WIDTH, WIN_HEIGHT);
 
-    int y = 38 + 10 + 10;
-    list.bounds = (RECT){ 10, y, WIN_WIDTH - 10, WIN_HEIGHT - 10 };
-    list.row_size = sizeof(ElementFile);
-    int list_width = list.bounds.right - list.bounds.left;
-    int list_width_third = list_width / 3;
-    int list_width_fill = list_width - list_width_third;
+    buttons[0].bounds = g_rects[RECT_LAYOUT_BUTTON_OPEN_FOLDER];
+    buttons[1].bounds = g_rects[RECT_LAYOUT_BUTTON_SYNC_EXPLR];
+    list.bounds = g_rects[RECT_LAYOUT_LIST_VIEW];
+
+
 
     ColumnListView columns[NB_LIST_COLUMN] = { 0 };
     columns[0].name = L"Name";
-    columns[0].width = list_width_fill;
+    columns[0].width = GetWFillOfThird(RECT_LAYOUT_LIST_VIEW);
     columns[0].FuncComparison = CompareByName;
 
     columns[1].name = L"Size";
-    columns[1].width = list_width_third;
+    columns[1].width = GetWThird(RECT_LAYOUT_LIST_VIEW);
     columns[1].FuncComparison = CompareBySize;
     
 
     list.columns = columns;
     list.n_columns = NB_LIST_COLUMN;
     list.indexColSort = 1;
+    list.row_size = sizeof(ElementFile);
 
 
     LaunchChoiceExplorer(mainHwnd, &info);

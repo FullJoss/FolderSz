@@ -5,6 +5,7 @@
 #include "Button.h"
 #include "list_view.h"
 #include "cache.h"
+#include "dpi.h"
 
 static HDC hdcMem = NULL;
 static HBITMAP hBmp = NULL;
