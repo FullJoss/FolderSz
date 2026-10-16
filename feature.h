@@ -7,10 +7,10 @@ extern wchar_t *current_path;
 
 wchar_t *LoadFolderDialog();
 
-ListFile* ScanFilePath(const wchar_t *dossierPath);
+ListFile* ScanFilePath(const wchar_t *dossierPath, ListFileView* lfv);
 
 // Call at cache.c
-void RefreshView();
+void RefreshView(ListFileView* lfv);
 
 static inline void AddFlagsElement(ElementFile *element, ElementFlags flag)
 {

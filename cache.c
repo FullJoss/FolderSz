@@ -21,6 +21,8 @@ static unsigned int iteration_tracker = 0;
 static inline void ReadCacheBinaryFile(wchar_t* filename);
 static inline void DecompressTable(CacheEntry* buffer);
 static inline CacheEntry* CompressTable();
+static inline AddJokerPathForWin32(int lenPath);
+static inline RemoveJokerPathForWin32(int lenPath);
 
 void LoadCache(void)
 {
@@ -74,14 +76,14 @@ CacheStatus FindSizeCachePath(ULONGLONG hash, FILETIME dateActuelle, ULONGLONG *
     return res;
 }
 
-ULONGLONG SearchFolderSize(const wchar_t *dossierPath, FILETIME lastModif)
+ULONGLONG SearchFolderSize(const wchar_t *dossierPath, FILETIME lastModif, ListFileView* lfv)
 {
     size_t length = wcslen(dossierPath);
     swprintf_s(g_PathBuffer, length + 1, L"%s", dossierPath);
-    return GetSizeCachePath(length, lastModif);
+    return GetSizeCachePath(length, lastModif, lfv);
 }
 
-ULONGLONG GetSizeCachePath(size_t lenPath, FILETIME lastModif)
+ULONGLONG GetSizeCachePath(size_t lenPath, FILETIME lastModif, ListFileView* lfv)
 {
     ULONGLONG tailleTotale = 0;
 
@@ -94,10 +96,7 @@ ULONGLONG GetSizeCachePath(size_t lenPath, FILETIME lastModif)
 
     else
     {
-        // 1. Préparation sûre du joker pour Windows
-        g_PathBuffer[lenPath] = L'\\';
-        g_PathBuffer[lenPath + 1] = L'*';
-        g_PathBuffer[lenPath + 2] = L'\0';
+        AddJokerPathForWin32(lenPath);
 
         WIN32_FIND_DATAW *pFindData = (WIN32_FIND_DATAW *)malloc(sizeof(WIN32_FIND_DATAW));
         if (pFindData == NULL)
@@ -108,8 +107,7 @@ ULONGLONG GetSizeCachePath(size_t lenPath, FILETIME lastModif)
 
         HANDLE hFind = FindFirstFileExW(g_PathBuffer, FindExInfoBasic, pFindData, FindExSearchNameMatch, NULL, FIND_FIRST_EX_LARGE_FETCH);
 
-        // 2. On restaure IMMEDIATEMENT le chemin propre pour ce niveau
-        g_PathBuffer[lenPath] = L'\0';
+        RemoveJokerPathForWin32(lenPath);
 
         if (hFind == INVALID_HANDLE_VALUE)
         {
@@ -132,7 +130,7 @@ ULONGLONG GetSizeCachePath(size_t lenPath, FILETIME lastModif)
             {
                 if (pFindData->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
                 {
-                    ULONGLONG tailleSousDossier = GetSizeCachePath(lenPath + ecrit, pFindData->ftLastWriteTime);
+                    ULONGLONG tailleSousDossier = GetSizeCachePath(lenPath + ecrit, pFindData->ftLastWriteTime, lfv);
                     tailleTotale += tailleSousDossier;
                 }
                 else
@@ -144,7 +142,7 @@ ULONGLONG GetSizeCachePath(size_t lenPath, FILETIME lastModif)
                 g_PathBuffer[ancienneLongueur] = L'\0';
             }
 
-            RefreshView();
+            RefreshView(lfv);
         } while (FindNextFileW(hFind, pFindData));
 
         FindClose(hFind);
@@ -273,4 +271,14 @@ static inline CacheEntry* CompressTable() {
     }
 
     return bufferRAM;
+}
+
+static inline AddJokerPathForWin32(int lenPath) {
+    g_PathBuffer[lenPath] = L'\\';
+    g_PathBuffer[lenPath + 1] = L'*';
+    g_PathBuffer[lenPath + 2] = L'\0';
+}
+
+static inline RemoveJokerPathForWin32(int lenPath) {
+    g_PathBuffer[lenPath] = L'\0';
 }

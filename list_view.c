@@ -238,7 +238,7 @@ void HandleListViewMouseWheel(HWND hWnd, int wheelDelta, LPARAM lParam, ListFile
 
 
 
-void UpdateListFileView(HWND hwnd, ListFileView* lfv, ListFile* newlist)
+void UpdateListFileView(HWND hwnd, ListFileView* lfv, ListFile* newlist, BOOL sort)
 {
     // DPI
     ROW_HEIGHT = DPI_CONST(26);
@@ -247,7 +247,6 @@ void UpdateListFileView(HWND hwnd, ListFileView* lfv, ListFile* newlist)
     ARROW_HEIGHT = DPI_CONST(6);
     ARROW_MARGE_RIGHT = DPI_CONST(10);
 
-    lfv->scrollPos = 0;
     lfv->indexColHover = -1;
     lfv->indexRowHover = -1;
 
@@ -263,16 +262,21 @@ void UpdateListFileView(HWND hwnd, ListFileView* lfv, ListFile* newlist)
 
         lfv->n_rows = nb_elem;
 
-        SortListFileView(lfv);
 
         CalculateItemsArea(lfv);
 
         CalculateTrackThumb(lfv);
 
+        if (sort) SortListFileView(lfv);
+        else {
+            lfv->scrollPos = lfv->maxScrollPos;
+        }
+
         CalculateClipRegion(lfv);
     }
 
     InvalidateRect(hwnd, &lfv->bounds, FALSE);
+    UpdateWindow(hwnd);
 }
 
 void FreeListFileView(ListFileView* lfv) {

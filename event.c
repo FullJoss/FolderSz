@@ -15,8 +15,8 @@ void OpenDialogFolder(HWND hwnd, WindowDataInformation* pData)
 
     if (chaine == NULL) return;
 
-    ListFile* list = ScanFilePath(chaine);
-    UpdateListFileView(hwnd, lfv, list);
+    ListFile* list = ScanFilePath(chaine, lfv);
+    UpdateListFileView(hwnd, lfv, list, TRUE);
 
     free(chaine);
 }
@@ -26,8 +26,8 @@ void LaunchChoiceExplorer(HWND hwnd, WindowDataInformation* pData) {
 
     if (CreateChoiceExplorer(mainHwnd, m_current_path, MAX_PATH))
     {
-        ListFile* list = ScanFilePath(m_current_path);
-        UpdateListFileView(hwnd, lfv, list);
+        ListFile* list = ScanFilePath(m_current_path, lfv);
+        UpdateListFileView(hwnd, lfv, list, TRUE);
     }
     else
         MessageBox_View(L"No Windows Explorer windows are open.");
