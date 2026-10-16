@@ -20,37 +20,8 @@ static inline void FillVarColorLight();
 static inline void FillBrushWithColor();
 static inline BOOL IsDarkMode();
 static inline void GetAccessHSystemList();
+static HFONT CreateCustomFont(const wchar_t* fontName, int size, int weight, BOOL useItalic);
 
-
-
-
-static HFONT CreateCustomFont(const wchar_t* fontName, int size, int weight, BOOL useItalic)
-{
-    HDC hdc = GetDC(NULL);    
-
-    int dpiY = GetDeviceCaps(hdc, LOGPIXELSY);
-
-    ReleaseDC(NULL, hdc);
-
-    int fontHeight = -MulDiv(size, dpiY, 72);
-
-    return CreateFontW(
-        fontHeight,                 
-        0,                           
-        0,                          
-        0,                          
-        weight,                  
-        useItalic,                    
-        FALSE,                       
-        FALSE,                      
-        DEFAULT_CHARSET,            
-        OUT_DEFAULT_PRECIS,         
-        CLIP_DEFAULT_PRECIS,        
-        CLEARTYPE_QUALITY,          
-        DEFAULT_PITCH | FF_DONTCARE,
-        fontName
-    );
-}
 
 void InitTheme()
 {
@@ -92,6 +63,35 @@ void SetTitleWindowTheme(HWND hWnd) {
         SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
 }
 
+
+
+static HFONT CreateCustomFont(const wchar_t* fontName, int size, int weight, BOOL useItalic)
+{
+    HDC hdc = GetDC(NULL);
+
+    int dpiY = GetDeviceCaps(hdc, LOGPIXELSY);
+
+    ReleaseDC(NULL, hdc);
+
+    int fontHeight = -MulDiv(size, dpiY, 72);
+
+    return CreateFontW(
+        fontHeight,
+        0,
+        0,
+        0,
+        weight,
+        useItalic,
+        FALSE,
+        FALSE,
+        DEFAULT_CHARSET,
+        OUT_DEFAULT_PRECIS,
+        CLIP_DEFAULT_PRECIS,
+        CLEARTYPE_QUALITY,
+        DEFAULT_PITCH | FF_DONTCARE,
+        fontName
+    );
+}
 
 
 static inline BOOL IsDarkMode()

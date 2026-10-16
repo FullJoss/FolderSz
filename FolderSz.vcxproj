@@ -140,6 +140,7 @@
     <ClCompile Include="cache.c" />
     <ClCompile Include="choice_explorer.c" />
     <ClCompile Include="dialog.c" />
+    <ClCompile Include="dpi.c" />
     <ClCompile Include="event.c" />
     <ClCompile Include="feature.c" />
     <ClCompile Include="layout.c" />

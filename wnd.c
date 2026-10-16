@@ -6,17 +6,24 @@
 #include "list_view.h"
 #include "cache.h"
 
-LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+static HDC hdcMem = NULL;
+static HBITMAP hBmp = NULL;
+static HBITMAP hBmpOld = NULL;
+static RECT background = { 0 };
 
-HWND CreateMainWindow(const wchar_t *title, int width, int height, WindowDataInformation *info)
+LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+static inline void FreeDoubleBuffering();
+static inline void EnsureDoubleBuffering(HDC hdc, int w, int h);
+
+HWND CreateMainWindow(const wchar_t *title, WindowDataInformation *info)
 {
     HINSTANCE hinstance = GetModuleHandle(NULL);
 
     WNDCLASSW wc = {0};
     wc.lpfnWndProc = MainWindowProc;
     wc.hInstance = hinstance;
-    wc.lpszClassName = L"WINDOW_SIMPLE";
     wc.hbrBackground = g_brushs[IC_WINDOW_COLOR];
+    wc.lpszClassName = L"WINDOW_SIMPLE";
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
     wc.hIcon = LoadIconW(hinstance, MAKEINTRESOURCEW(1));
 
@@ -25,7 +32,7 @@ HWND CreateMainWindow(const wchar_t *title, int width, int height, WindowDataInf
     const POINT INITIAL_WINDOW_POS = { CW_USEDEFAULT , CW_USEDEFAULT };
 
     DWORD styleFixe = WS_OVERLAPPEDWINDOW & ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
-    RECT rc = { 0, 0, width, height };
+    RECT rc = { 0, 0, info->width, info->height };
     DWORD dwExStyle = 0;
 
     AdjustWindowRectEx(&rc, styleFixe, FALSE, dwExStyle);
@@ -107,17 +114,39 @@ static inline int OnPaint(HWND hwnd, WindowDataInformation* window_info) {
     PAINTSTRUCT ps;
     HDC hdc = BeginPaint(hwnd, &ps);
 
-    HFONT hOldFont = (HFONT)SelectObject(hdc, g_font);
+    EnsureDoubleBuffering(hdc, window_info->width, window_info->height);
 
-    DrawListFileView(hdc, window_info->lfv, ps.rcPaint);
+    FillRect(hdcMem, &background, g_brushs[IC_WINDOW_COLOR]);
+
+    HFONT hOldFont = (HFONT)SelectObject(hdcMem, g_font);
+
+    DrawListFileView(hdcMem, window_info->lfv, ps.rcPaint);
 
     for (int i = 0; i < window_info->n_buttons; i++)
-        ButtonDraw(hdc, window_info->buttons + i);
+        ButtonDraw(hdcMem, window_info->buttons + i);
 
-    SelectObject(hdc, hOldFont);
+    BitBlt(hdc, 0, 0, window_info->width, window_info->height, hdcMem, 0, 0, SRCCOPY);
+
+    SelectObject(hdcMem, hOldFont);
     EndPaint(hwnd, &ps);
 
     return 0;
+}
+
+static inline void EnsureDoubleBuffering(HDC hdc, int width, int height) {
+    if (!hdcMem) hdcMem = CreateCompatibleDC(hdc);
+    if (!hBmp) {
+        background.right = width;
+        background.bottom = height;
+        hBmp = CreateCompatibleBitmap(hdc, width, height);
+        hBmpOld = (HBITMAP)SelectObject(hdcMem, hBmp);
+    }
+}
+
+static inline void FreeDoubleBuffering() {
+    SelectObject(hdcMem, hBmpOld);
+    DeleteObject(hBmp);
+    DeleteDC(hdcMem);
 }
 
 LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -200,9 +229,12 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
     case WM_DESTROY:
     {
         SaveCache();
+        FreeDoubleBuffering();
         PostQuitMessage(0);
         return 0;
     }
+    case WM_ERASEBKGND:
+        return 1;
     }
 
     return DefWindowProcW(hwnd, uMsg, wParam, lParam);

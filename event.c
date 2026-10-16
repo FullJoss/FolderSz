@@ -5,7 +5,7 @@
 #include "choice_explorer.h"
 
 static wchar_t m_current_path[MAX_PATH] = { 0 };
-BOOL g_TriCroissant = TRUE;
+BOOL g_TriCroissant = FALSE;
 
 void OpenDialogFolder(HWND hwnd, WindowDataInformation* pData)
 {
@@ -40,7 +40,7 @@ static inline int CompareByDirectory(ElementFile* A, ElementFile* B) {
     return isDirB - isDirA;
 }
 
-int CompareByName(const void* a, const void* b)
+int CompareByName(const void* a, const void* b, BOOL isAscending)
 {
     ElementFile* elemA = (ElementFile*)a;
     ElementFile* elemB = (ElementFile*)b;
@@ -50,10 +50,10 @@ int CompareByName(const void* a, const void* b)
         return diff;
 
     diff = _wcsicmp(elemA->name, elemB->name); // case-insensitive
-    return g_TriCroissant ? diff : -diff;
+    return isAscending ? diff : -diff;
 }
 
-int CompareBySize(const void* a, const void* b)
+int CompareBySize(const void* a, const void* b, BOOL isAscending)
 {
     ElementFile* elemA = (ElementFile*)a;
     ElementFile* elemB = (ElementFile*)b;
@@ -65,5 +65,5 @@ int CompareBySize(const void* a, const void* b)
     BOOL ABetter = (elemA->size) > (elemB->size);
     BOOL BBetter = (elemA->size) < (elemB->size);
     diff = ABetter - BBetter;
-    return g_TriCroissant ? diff : -diff;
+    return isAscending ? diff : -diff;
 }

@@ -19,6 +19,7 @@
 #define WIN_HEIGHT 600
 
 HWND mainHwnd = NULL;
+int DPI_VALUE = 96;
 
 int main()
 {
@@ -29,9 +30,10 @@ int main()
 
     Button buttons[NB_BUTTON];
     ListFileView list = { 0 };
-    WindowDataInformation info = { buttons, NB_BUTTON, &list };
-    mainHwnd = CreateMainWindow(L"JossFileSize", WIN_WIDTH, WIN_HEIGHT, &info);
+    WindowDataInformation info = { buttons, &list, NB_BUTTON, WIN_WIDTH, WIN_HEIGHT };
+    mainHwnd = CreateMainWindow(L"JossFileSize", &info);
 
+    DPI_VALUE = GetDpiForWindowSafe(mainHwnd);
 
     SetY(10);
     SetMargin(10);
@@ -59,11 +61,11 @@ int main()
     columns[1].name = L"Size";
     columns[1].width = list_width_third;
     columns[1].FuncComparison = CompareBySize;
-    columns[1].isSorted = TRUE;
+    
 
     list.columns = columns;
     list.n_columns = NB_LIST_COLUMN;
-
+    list.indexColSort = 1;
 
 
     LaunchChoiceExplorer(mainHwnd, &info);

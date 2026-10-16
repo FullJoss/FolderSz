@@ -57,6 +57,9 @@
     <ClCompile Include="tick.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="dpi.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="feature.h">

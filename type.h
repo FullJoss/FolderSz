@@ -2,6 +2,7 @@
 #include "pch.h"
 
 typedef void (*Callback) (HWND, void*);
+typedef int (*CallbackSort) (const void*, const void*, BOOL isAscending);
 
 typedef struct
 {
@@ -32,8 +33,7 @@ typedef struct {
     RECT padding;
     const wchar_t* name;
     unsigned int width;
-    BOOL isSorted;
-    int (*FuncComparison) (const void*, const void*);
+    CallbackSort FuncComparison;
 } ColumnListView;
 
 typedef enum
@@ -63,6 +63,7 @@ typedef struct {
     RECT bounds;
     RECT itemsArea;
     RECT sbTrack;
+    RECT headRect;
 
     HRGN clipRgn;
     ColumnListView* columns;
@@ -70,18 +71,26 @@ typedef struct {
     size_t row_size;
     
     BOOL isDraggingScroll;
+    BOOL enableScroll;
+    BOOL ascendingSort;
     
     int scrollPos;
+    int maxScrollPos;
     int dragYOffset;
-    int indexHover;
+    int indexRowHover;
+    int indexColHover;
+    int indexColSort;
     int sbThumbHeight;
-    int n_columns;
-    int n_rows;
+    int maxThumbY;
+    unsigned int n_columns;
+    unsigned int n_rows;
 } ListFileView;
 
 typedef struct
 {
     Button* buttons;
-    int n_buttons;
     ListFileView* lfv;
+    int n_buttons;
+    int width;
+    int height;
 } WindowDataInformation;
