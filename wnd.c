@@ -20,6 +20,9 @@ HWND CreateMainWindow(const wchar_t *title, WindowDataInformation *info)
 {
     HINSTANCE hinstance = GetModuleHandle(NULL);
 
+    int largeurEcran = GetSystemMetrics(SM_CXSCREEN);
+    int hauteurEcran = GetSystemMetrics(SM_CYSCREEN);
+
     WNDCLASSW wc = {0};
     wc.lpfnWndProc = MainWindowProc;
     wc.hInstance = hinstance;
