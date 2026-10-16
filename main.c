@@ -15,8 +15,8 @@
 
 #define NB_BUTTON 2
 #define NB_LIST_COLUMN 2
-#define WIN_WIDTH 500
-#define WIN_HEIGHT 600
+#define WIN_WIDTH 400
+#define WIN_HEIGHT 500
 
 HWND mainHwnd = NULL;
 int DPI_VALUE = 96;
@@ -32,6 +32,7 @@ int main()
     ListFileView list = { 0 };
     WindowDataInformation info = { buttons, &list, NB_BUTTON, WIN_WIDTH, WIN_HEIGHT };
     mainHwnd = CreateMainWindow(L"JossFileSize", &info);
+    g_fontHeight = GetFontHeightDPI(mainHwnd, g_font);
 
     DPI_VALUE = GetDpiForWindowSafe(mainHwnd);
 
@@ -40,7 +41,7 @@ int main()
   
 
 
-    InitLayout(WIN_WIDTH, WIN_HEIGHT);
+    InitLayout(DPI_CONST(WIN_WIDTH), DPI_CONST(WIN_HEIGHT));
 
     buttons[0].bounds = g_rects[RECT_LAYOUT_BUTTON_OPEN_FOLDER];
     buttons[1].bounds = g_rects[RECT_LAYOUT_BUTTON_SYNC_EXPLR];

@@ -9,10 +9,10 @@
 COLORREF g_colors[IC_COUNT] = { 0 };
 HBRUSH g_brushs[IC_COUNT] = { 0 };
 HFONT g_font;
+int g_fontHeight = 0;
 HIMAGELIST g_systemImageList = NULL;
 HPEN CONST_PEN_SELECTION = NULL;
 BOOL isDarkMode = FALSE;
-
 
 static inline void FreeBrushs();
 static inline void FillVarColorDark();
@@ -27,7 +27,7 @@ void InitTheme()
 {
     GetAccessHSystemList();
 
-    g_font = CreateCustomFont(L"Segoe UI", 9, FW_MEDIUM, FALSE);
+    g_font = CreateCustomFont(L"Segoe UI", 10, FW_MEDIUM, FALSE);
 
     isDarkMode = IsDarkMode();
 
@@ -74,6 +74,7 @@ static HFONT CreateCustomFont(const wchar_t* fontName, int size, int weight, BOO
     ReleaseDC(NULL, hdc);
 
     int fontHeight = -MulDiv(size, dpiY, 72);
+    g_fontHeight = fontHeight;
 
     return CreateFontW(
         fontHeight,

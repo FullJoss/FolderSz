@@ -11,6 +11,8 @@ static HDC hdcMem = NULL;
 static HBITMAP hBmp = NULL;
 static HBITMAP hBmpOld = NULL;
 static RECT background = { 0 };
+static int g_dpi = 96;
+#define SCALE_BY_DPI(value) ((((g_dpi) * (value)) + 48) / 96)
 
 LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 static inline void FreeDoubleBuffering();
@@ -18,10 +20,9 @@ static inline void EnsureDoubleBuffering(HDC hdc, int w, int h);
 
 HWND CreateMainWindow(const wchar_t *title, WindowDataInformation *info)
 {
+    g_dpi = GetDpiForSystem();
+    
     HINSTANCE hinstance = GetModuleHandle(NULL);
-
-    int largeurEcran = GetSystemMetrics(SM_CXSCREEN);
-    int hauteurEcran = GetSystemMetrics(SM_CYSCREEN);
 
     WNDCLASSW wc = {0};
     wc.lpfnWndProc = MainWindowProc;
@@ -36,6 +37,10 @@ HWND CreateMainWindow(const wchar_t *title, WindowDataInformation *info)
     const POINT INITIAL_WINDOW_POS = { CW_USEDEFAULT , CW_USEDEFAULT };
 
     DWORD styleFixe = WS_OVERLAPPEDWINDOW & ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
+    
+    info->width = SCALE_BY_DPI(info->width);
+    info->height = SCALE_BY_DPI(info->height);
+
     RECT rc = { 0, 0, info->width, info->height };
     DWORD dwExStyle = 0;
 

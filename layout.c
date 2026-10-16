@@ -1,4 +1,5 @@
 #include "layout.h"
+#include "dpi.h"
 
 typedef struct {
     int width;
@@ -34,12 +35,12 @@ void InitLayout(int windowWidth, int windowHeight) {
     
     DefineBegin(windowWidth, windowHeight);
 
-    Define(RECT_LAYOUT_BUTTON_OPEN_FOLDER, -1, 34);
-    Define(RECT_LAYOUT_BUTTON_SYNC_EXPLR, 260, 34);
+    Define(RECT_LAYOUT_BUTTON_OPEN_FOLDER, -1, DPI_CONST(34));
+    Define(RECT_LAYOUT_BUTTON_SYNC_EXPLR, DPI_CONST(260), DPI_CONST(34));
     
     NextLine();
 
-    Define(RECT_LAYOUT_LIST_VIEW, -1, windowHeight - PADDING * 2 - GAP - 34);
+    Define(RECT_LAYOUT_LIST_VIEW, -1, windowHeight - PADDING * 2 - GAP - DPI_CONST(34));
 
     DefineComplete();
 }

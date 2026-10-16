@@ -3,12 +3,10 @@
 #include "theme.h"
 #include "dialog.h"
 #include "backend.h"
+#include "dpi.h"
 
 #define CLAMP(val, vmin, vmax) ( ((val) < (vmin)) ? (vmin) : (((val) > (vmax)) ? (vmax) : (val)) )
-#define ROW_HEIGHT          26
 #define ROW_GAP             2
-#define COLUMN_0_WIDTH      300
-#define ICON_SIZE           16
 #define ICON_PADDING        6
 #define TEXT_PADDING        10
 #define SCROLLBAR_WIDTH     14
@@ -16,6 +14,8 @@
 #define MIN_THUMB_HEIGHT    20
 
 static wchar_t sizeBuffer[32];
+static int ROW_HEIGHT = 26;
+static int ICON_SIZE = 16;
 
 static inline void DrawHeaderTitle(HDC hdc, ColumnListView* col, int nb_col, RECT bounds, int indxHover);
 static inline void DrawScrollBar(HDC hdc, ListFileView* __restrict lfv, int viewHeight, int totalContentHeight);
@@ -35,7 +35,7 @@ static inline RECT GetThumbRect(ListFileView* lfv);
 static inline void SortListFileView(ListFileView* lfv);
 static inline int GetNewScrollPos(int ymouse, ListFileView* lfv);
 static void CustomSort(void* tab, size_t nb, size_t sizeElem, CallbackSort funcSort, BOOL isAscending);
-
+static inline int FindIndexHeaderTitle(int x, int initial, ColumnListView* col, int nCol);
 
 
 
@@ -237,6 +237,10 @@ void HandleListViewMouseWheel(HWND hWnd, int wheelDelta, LPARAM lParam, ListFile
 
 void UpdateListFileView(HWND hwnd, ListFileView* lfv, ListFile* newlist)
 {
+    // DPI
+    ROW_HEIGHT = DPI_CONST(26);
+    ICON_SIZE = DPI_CONST(16);
+
     lfv->scrollPos = 0;
     lfv->indexColHover = -1;
     lfv->indexRowHover = -1;
@@ -344,16 +348,17 @@ static inline const wchar_t* GetRowTextElementFile(ElementFile* file, int i_col)
 
 static inline void DrawItem(HDC hdc, void* __restrict row, RECT rowBounds, RECT itemsArea, ColumnListView* col, int n_col) {
     ElementFile* file = (ElementFile*)row;
-    DrawColumnImageList(hdc, file->indexIcon, 5, rowBounds, itemsArea);
+    DrawColumnImageList(hdc, file->indexIcon, DPI_CONST(5), rowBounds, itemsArea);
 
     RECT textBounds;
 
-    int x = 8 + 5 + ICON_SIZE;
+    const int paddingLeft = DPI_CONST(8 + 5);
+    int x = paddingLeft + ICON_SIZE;
     const int gap = 16;
     for (int i = 0; i < n_col; i++) {
 
         int width = col[i].width;
-        if (i == 0) width -= 8 + 5 + ICON_SIZE;
+        if (i == 0) width -= paddingLeft + ICON_SIZE;
 
         textBounds = GetNextTextBounds(x, width, rowBounds, itemsArea);
         DrawColumnText(hdc, GetRowTextElementFile(file, i), textBounds);
@@ -379,7 +384,7 @@ static inline void DrawColumnImageList(HDC hdc, int indexIcon, int paddingLeft, 
 
 static inline void DrawColumnText(HDC hdc, const wchar_t* __restrict text, RECT textBounds) {
     SetTextColor(hdc, g_colors[IC_TEXT]);
-    static decalage = 4;
+    int decalage = (RectHeight(&textBounds) - g_fontHeight) / 2;
     ExtTextOutW(hdc, textBounds.left, textBounds.top + decalage,
         ETO_CLIPPED,
         &textBounds,

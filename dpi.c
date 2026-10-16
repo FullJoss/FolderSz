@@ -35,7 +35,21 @@ void ForceSharpWindowViaCode(void)
 
 }
 
-// Récupère le DPI de la fenêtre (Win10 1607+)
+int GetFontHeightDPI(HWND hwnd, HFONT font) {
+    HDC hdcLocal = GetDC(hwnd);
+    HFONT hOldFont = (HFONT)SelectObject(hdcLocal, font);
+
+    TEXTMETRICW tm;
+    GetTextMetricsW(hdcLocal, &tm);
+
+    int textRenderHeight = tm.tmHeight;
+
+    SelectObject(hdcLocal, hOldFont);
+    ReleaseDC(hwnd, hdcLocal);
+
+    return textRenderHeight;
+}
+
 int GetDpiForWindowSafe(HWND hwnd) {
     HMODULE hUser32 = GetModuleHandleW(L"user32.dll");
     if (hUser32) {
@@ -45,12 +59,6 @@ int GetDpiForWindowSafe(HWND hwnd) {
             return pGetDpi(hwnd);
         }
     }
-    // Fallback pour les vieux systèmes (toujours à 96 si non DPI aware)
+    // Fallback 
     return 96;
-}
-
-// Convertit des DIPs (Logical Pixels) en Physical Pixels
-int ScaleForDpi(HWND hwnd, int logicalValue) {
-    int dpi = GetDpiForWindowSafe(hwnd);
-    return (logicalValue * dpi) / 96;
 }

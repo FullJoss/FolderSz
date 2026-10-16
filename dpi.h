@@ -17,3 +17,4 @@ typedef HRESULT(WINAPI *SetProcessDpiAwarenessProc)(PROCESS_DPI_AWARENESS);
 
 void ForceSharpWindowViaCode(void);
 int GetDpiForWindowSafe(HWND hwnd);
+int GetFontHeightDPI(HWND hwnd, HFONT font);
