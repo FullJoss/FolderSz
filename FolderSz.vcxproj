@@ -163,6 +163,7 @@
     <ClInclude Include="layout.h" />
     <ClInclude Include="list_view.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="theme.h" />
     <ClInclude Include="tick.h" />
     <ClInclude Include="type.h" />

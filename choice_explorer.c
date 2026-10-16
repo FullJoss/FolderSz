@@ -158,7 +158,7 @@ LRESULT CALLBACK AltTabChoixProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
         SelectObject(hdc, g_font);
 
         RECT rcTitle = {20, 10, 500, 35};
-        DrawTextW(hdc, L"Sélectionnez la fenêtre de l'Explorateur à synchroniser :", -1, &rcTitle, DT_LEFT | DT_VCENTER);
+        DrawTextW(hdc, L"Select the Explorer window to synchronize :", -1, &rcTitle, DT_LEFT | DT_VCENTER);
 
         POINT pt;
         GetCursorPos(&pt);
