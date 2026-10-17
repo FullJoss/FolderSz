@@ -1,4 +1,12 @@
-﻿#include "choice_explorer.h"
+﻿/*
+ * FolderSz - Folder Size Utility
+ * Copyright (c) 2026 Joss HR
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for details.
+ */
+
+
+#include "choice_explorer.h"
 #include "theme.h"
 #include "backend.h"
 #include "type.h"

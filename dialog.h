@@ -1,3 +1,11 @@
+/*
+ * FolderSz - Folder Size Utility
+ * Copyright (c) 2026 Joss HR
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for details.
+ */
+
+
 #pragma once
 
 #ifdef _DEBUG
@@ -8,7 +16,6 @@
         OutputDebugStringW(debug_buffer); \
     } while(0)
 #else
-// En mode Release, la macro ne génère STRICTEMENT AUCUN CODE (0% impact CPU)
 #define DEBUG_PRINT(format, ...) ((void)0)
 #endif
 

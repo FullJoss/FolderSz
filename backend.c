@@ -1,3 +1,11 @@
+/*
+ * FolderSz - Folder Size Utility
+ * Copyright (c) 2026 Joss HR
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for details.
+ */
+
+
 #include "backend.h"
 
 #define SAFE_RELEASE(p) do { if (p) { (p)->lpVtbl->Release(p); (p) = NULL; } } while(0)
