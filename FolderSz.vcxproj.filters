@@ -13,99 +13,120 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\platform">
+      <UniqueIdentifier>{717e16d0-b3bd-492d-938e-a872f882615f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ui">
+      <UniqueIdentifier>{a76eba37-e0b4-441d-b672-3cab882518ed}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\core">
+      <UniqueIdentifier>{4aed4990-3480-460f-99bd-6bcd2c67c3dc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\core">
+      <UniqueIdentifier>{9a3ebaed-f8ec-4bcb-a1aa-845d80d66405}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ui">
+      <UniqueIdentifier>{c5b92730-06b8-4c30-9e48-bbbb5444fcd9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\platform">
+      <UniqueIdentifier>{8f04c5d8-b8c2-4219-b9b1-47f8328747d6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="choice_explorer.c">
+    <ClCompile Include="src\main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="dialog.c">
+    <ClCompile Include="src\pch.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="event.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\core\cache.c">
+      <Filter>Source Files\core</Filter>
     </ClCompile>
-    <ClCompile Include="feature.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\core\event.c">
+      <Filter>Source Files\core</Filter>
     </ClCompile>
-    <ClCompile Include="list_view.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\core\feature.c">
+      <Filter>Source Files\core</Filter>
     </ClCompile>
-    <ClCompile Include="main.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\core\tick.c">
+      <Filter>Source Files\core</Filter>
     </ClCompile>
-    <ClCompile Include="pch.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\ui\layout.c">
+      <Filter>Source Files\ui</Filter>
     </ClCompile>
-    <ClCompile Include="theme.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\ui\list_view.c">
+      <Filter>Source Files\ui</Filter>
     </ClCompile>
-    <ClCompile Include="wnd.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\ui\theme.c">
+      <Filter>Source Files\ui</Filter>
     </ClCompile>
-    <ClCompile Include="button.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\ui\button.c">
+      <Filter>Source Files\ui</Filter>
     </ClCompile>
-    <ClCompile Include="cache.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\platform\choice_explorer.c">
+      <Filter>Source Files\platform</Filter>
     </ClCompile>
-    <ClCompile Include="backend.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\platform\dialog.c">
+      <Filter>Source Files\platform</Filter>
     </ClCompile>
-    <ClCompile Include="layout.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\platform\dpi.c">
+      <Filter>Source Files\platform</Filter>
     </ClCompile>
-    <ClCompile Include="tick.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\platform\wnd.c">
+      <Filter>Source Files\platform</Filter>
     </ClCompile>
-    <ClCompile Include="dpi.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\platform\backend.c">
+      <Filter>Source Files\platform</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="feature.h">
+    <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="list_view.h">
+    <ClInclude Include="includes\pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="pch.h">
+    <ClInclude Include="includes\type.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="theme.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="includes\ui\layout.h">
+      <Filter>Header Files\ui</Filter>
     </ClInclude>
-    <ClInclude Include="wnd.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="includes\ui\list_view.h">
+      <Filter>Header Files\ui</Filter>
     </ClInclude>
-    <ClInclude Include="button.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="includes\ui\theme.h">
+      <Filter>Header Files\ui</Filter>
     </ClInclude>
-    <ClInclude Include="cache.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="includes\ui\button.h">
+      <Filter>Header Files\ui</Filter>
     </ClInclude>
-    <ClInclude Include="choice_explorer.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="includes\platform\choice_explorer.h">
+      <Filter>Header Files\platform</Filter>
     </ClInclude>
-    <ClInclude Include="dialog.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="includes\platform\dialog.h">
+      <Filter>Header Files\platform</Filter>
     </ClInclude>
-    <ClInclude Include="dpi.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="includes\platform\dpi.h">
+      <Filter>Header Files\platform</Filter>
     </ClInclude>
-    <ClInclude Include="event.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="includes\platform\wnd.h">
+      <Filter>Header Files\platform</Filter>
     </ClInclude>
-    <ClInclude Include="backend.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="includes\platform\backend.h">
+      <Filter>Header Files\platform</Filter>
     </ClInclude>
-    <ClInclude Include="layout.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="includes\core\event.h">
+      <Filter>Header Files\core</Filter>
     </ClInclude>
-    <ClInclude Include="tick.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="includes\core\feature.h">
+      <Filter>Header Files\core</Filter>
     </ClInclude>
-    <ClInclude Include="type.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="includes\core\tick.h">
+      <Filter>Header Files\core</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\core\cache.h">
+      <Filter>Header Files\core</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

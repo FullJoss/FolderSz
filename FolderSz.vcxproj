@@ -76,6 +76,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)src\core;$(ProjectDir)src\platform;$(ProjectDir)src\ui;$(ProjectDir)src;$(ProjectDir)includes\core;$(ProjectDir)includes\platform;$(ProjectDir)includes\ui;$(ProjectDir)includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -93,6 +94,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)src\core;$(ProjectDir)src\platform;$(ProjectDir)src\ui;$(ProjectDir)src;$(ProjectDir)includes\core;$(ProjectDir)includes\platform;$(ProjectDir)includes\ui;$(ProjectDir)includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -108,6 +110,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)src\core;$(ProjectDir)src\platform;$(ProjectDir)src\ui;$(ProjectDir)src;$(ProjectDir)includes\core;$(ProjectDir)includes\platform;$(ProjectDir)includes\ui;$(ProjectDir)includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -125,6 +128,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)src\core;$(ProjectDir)src\platform;$(ProjectDir)src\ui;$(ProjectDir)src;$(ProjectDir)includes\core;$(ProjectDir)includes\platform;$(ProjectDir)includes\ui;$(ProjectDir)includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -135,39 +139,39 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="backend.c" />
-    <ClCompile Include="button.c" />
-    <ClCompile Include="cache.c" />
-    <ClCompile Include="choice_explorer.c" />
-    <ClCompile Include="dialog.c" />
-    <ClCompile Include="dpi.c" />
-    <ClCompile Include="event.c" />
-    <ClCompile Include="feature.c" />
-    <ClCompile Include="layout.c" />
-    <ClCompile Include="list_view.c" />
-    <ClCompile Include="main.c" />
-    <ClCompile Include="pch.c" />
-    <ClCompile Include="theme.c" />
-    <ClCompile Include="tick.c" />
-    <ClCompile Include="wnd.c" />
+    <ClCompile Include="src\core\cache.c" />
+    <ClCompile Include="src\core\event.c" />
+    <ClCompile Include="src\core\feature.c" />
+    <ClCompile Include="src\core\tick.c" />
+    <ClCompile Include="src\main.c" />
+    <ClCompile Include="src\pch.c" />
+    <ClCompile Include="src\platform\backend.c" />
+    <ClCompile Include="src\platform\choice_explorer.c" />
+    <ClCompile Include="src\platform\dialog.c" />
+    <ClCompile Include="src\platform\dpi.c" />
+    <ClCompile Include="src\platform\wnd.c" />
+    <ClCompile Include="src\ui\button.c" />
+    <ClCompile Include="src\ui\layout.c" />
+    <ClCompile Include="src\ui\list_view.c" />
+    <ClCompile Include="src\ui\theme.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="backend.h" />
-    <ClInclude Include="button.h" />
-    <ClInclude Include="cache.h" />
-    <ClInclude Include="choice_explorer.h" />
-    <ClInclude Include="dialog.h" />
-    <ClInclude Include="dpi.h" />
-    <ClInclude Include="event.h" />
-    <ClInclude Include="feature.h" />
-    <ClInclude Include="layout.h" />
-    <ClInclude Include="list_view.h" />
-    <ClInclude Include="pch.h" />
+    <ClInclude Include="includes\core\cache.h" />
+    <ClInclude Include="includes\core\event.h" />
+    <ClInclude Include="includes\core\feature.h" />
+    <ClInclude Include="includes\core\tick.h" />
+    <ClInclude Include="includes\pch.h" />
+    <ClInclude Include="includes\platform\backend.h" />
+    <ClInclude Include="includes\platform\choice_explorer.h" />
+    <ClInclude Include="includes\platform\dialog.h" />
+    <ClInclude Include="includes\platform\dpi.h" />
+    <ClInclude Include="includes\platform\wnd.h" />
+    <ClInclude Include="includes\type.h" />
+    <ClInclude Include="includes\ui\button.h" />
+    <ClInclude Include="includes\ui\layout.h" />
+    <ClInclude Include="includes\ui\list_view.h" />
+    <ClInclude Include="includes\ui\theme.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="theme.h" />
-    <ClInclude Include="tick.h" />
-    <ClInclude Include="type.h" />
-    <ClInclude Include="wnd.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resources.rc" />
