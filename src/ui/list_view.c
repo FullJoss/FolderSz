@@ -21,6 +21,11 @@
 #define COL_HEADER_HEIGHT   34
 #define MIN_THUMB_HEIGHT    20
 
+typedef struct {
+    int start;
+    int end;
+} IndexRange;
+
 static wchar_t sizeBuffer[32];
 static int ROW_HEIGHT = 26;
 static int ICON_SIZE = 16;
@@ -38,7 +43,7 @@ static inline RECT GetNextTextBounds(int x, int row, RECT rowBounds, RECT itemsA
 static inline int GetHoverIndex(HWND hWnd, int ymouse, ListFileView* lfv);
 static inline void MoveHorizontalRect(RECT* r, const RECT limit, int width, int value);
 static inline void InvalidatePairItem(HWND hwnd, RECT bounds, int scrollPos, int i1, int i2);
-static inline POINT GetIndexRange(ListFileView* __restrict lfv, RECT rcPaint);
+static inline IndexRange GetIndexRange(ListFileView* __restrict lfv, RECT rcPaint);
 static inline void CalculateClipRegion(ListFileView* lfv);
 static inline void CalculateItemsArea(ListFileView* lfv);
 static inline void CalculateTrackThumb(ListFileView* lfv);
@@ -78,11 +83,11 @@ void DrawListFileView(HDC hdc, ListFileView* lfv, RECT rcPaint) {
 
         RECT rowBounds = { 0 };
 
-        POINT i_range = GetIndexRange(lfv, rcPaint);
+        IndexRange i_range = GetIndexRange(lfv, rcPaint);
 
         SelectClipRgn(hdc, lfv->clipRgn);
         
-        for (int i = i_range.x; i < i_range.y; i++) {
+        for (int i = i_range.start; i <= i_range.end; i++) {
 
             rowBounds = GetNextRowBounds(i, lfv->scrollPos, itemsArea);
 
@@ -483,7 +488,7 @@ static inline void InvalidatePairItem(HWND hwnd, RECT area, int scrollPos, int i
     InvalidateRect(hwnd, &newR, FALSE);
 }
 
-static inline POINT GetIndexRange(ListFileView* __restrict lfv, RECT rcPaint) {
+static inline IndexRange GetIndexRange(ListFileView* __restrict lfv, RECT rcPaint) {
     int paintTopVirtual = (rcPaint.top - lfv->itemsArea.top) + lfv->scrollPos;
     int paintBottomVirtual = (rcPaint.bottom - lfv->itemsArea.top) + lfv->scrollPos;
 
@@ -497,7 +502,7 @@ static inline POINT GetIndexRange(ListFileView* __restrict lfv, RECT rcPaint) {
     if (startIndex < 0) startIndex = 0;
     if (endIndex >= lfv->n_rows) endIndex = lfv->n_rows - 1;
 
-    return (POINT){ startIndex, endIndex };
+    return (IndexRange){ startIndex, endIndex };
 }
 
 static inline void CalculateClipRegion(ListFileView* lfv) {
