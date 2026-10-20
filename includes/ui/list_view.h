@@ -13,6 +13,7 @@
 
 void DrawListFileView(HDC hdc, ListFileView* lfv, RECT rcPaint);
 void HandleListViewLButtonUp(HWND hWnd, ListFileView* listView);
+void HandleListViewLButtonDoubleClick(HWND hWnd, int x, int y, ListFileView* lfv);
 void HandleListViewMouseMove(HWND hWnd, int x, int y, ListFileView* listView);
 void HandleListViewLButtonDown(HWND hWnd, int x, int y, ListFileView* listView);
 void HandleListViewMouseWheel(HWND hWnd, int wheelDelta, LPARAM lParam, ListFileView* listView);

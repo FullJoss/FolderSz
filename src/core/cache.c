@@ -64,7 +64,7 @@ CacheStatus FindSizeCachePath(ULONGLONG hash, FILETIME dateActuelle, ULONGLONG *
         index = (index + 1) % MAX_CACHE_ENTRIES;
 
         if (begin == index) {
-            MessageBox_View(L"Erreur critique : La table de hachage est pleine !");
+            MessageBox_View(L"Critical error: The hash table is full!");
             return CACHE_STATUS_ERROR;
         }
     }
@@ -74,7 +74,6 @@ CacheStatus FindSizeCachePath(ULONGLONG hash, FILETIME dateActuelle, ULONGLONG *
         {
             *outTaille = g_CacheTable[index].size;
             res = CACHE_STATUS_UPDATE;
-            OutputDebugStringW(L"Puisser dans le cache !\n");
         }
         else {
             res = CACHE_STATUS_OLD;
@@ -99,7 +98,7 @@ ULONGLONG GetSizeCachePath(size_t lenPath, FILETIME lastModif, ListFileView* lfv
 
     CacheStatus sresult = FindSizeCachePath(hashPath, lastModif, &tailleTotale);
 
-    if (sresult & (CACHE_STATUS_ERROR | CACHE_STATUS_UPDATE))
+    if ((sresult == CACHE_STATUS_ERROR) || (sresult == CACHE_STATUS_UPDATE))
         return tailleTotale;
 
     else

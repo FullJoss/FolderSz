@@ -15,5 +15,7 @@
 void LaunchChoiceExplorer(HWND, WindowDataInformation*);
 void OpenDialogFolder(HWND, WindowDataInformation*);
 
+void OnClickRow(void*);
+
 int CompareByName(const void* a, const void* b, BOOL isAscending);
 int CompareBySize(const void* a, const void* b, BOOL isAscending);

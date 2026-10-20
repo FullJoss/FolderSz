@@ -20,6 +20,6 @@ int MessageBox_Confirm(const wchar_t *text)
         mainHwnd,                   
         text,                    
         L"Confirmation",      
-        MB_OKCANCEL | MB_ICONQUESTION
+        MB_YESNO | MB_ICONQUESTION
     );
 }

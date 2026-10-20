@@ -40,7 +40,7 @@ typedef struct {
 typedef struct {
     RECT padding;
     const wchar_t* name;
-    unsigned int width;
+    int width;
     CallbackSort FuncComparison;
 } ColumnListView;
 
@@ -50,7 +50,8 @@ typedef enum
     ElementDirectory = 1 << 0,
     ElementSystem = 1 << 1,
     ElementPartition = 1 << 2,
-    ElementCache = 1 << 3
+    ElementCache = 1 << 3,
+    ElementParentDirectory = 1 << 4,
 } ElementFlags;
 
 typedef struct
@@ -88,10 +89,13 @@ typedef struct {
     int indexRowHover;
     int indexColHover;
     int indexColSort;
+    int indexRowSelect;
     int sbThumbHeight;
     int maxThumbY;
     unsigned int n_columns;
     unsigned int n_rows;
+
+    void (*OnDoubleClickRow) (HWND, void*);
 } ListFileView;
 
 typedef struct

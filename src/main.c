@@ -55,6 +55,8 @@ int main()
     buttons[1].bounds = g_rects[RECT_LAYOUT_BUTTON_SYNC_EXPLR];
     list.bounds = g_rects[RECT_LAYOUT_LIST_VIEW];
 
+    list.OnDoubleClickRow = OnDoubleClickRow;
+
 
 
     ColumnListView columns[NB_LIST_COLUMN] = { 0 };

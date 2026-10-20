@@ -42,10 +42,12 @@ void LaunchChoiceExplorer(HWND hwnd, WindowDataInformation* pData) {
 }
 
 static inline int CompareByDirectory(ElementFile* A, ElementFile* B) {
+    BOOL isDirAParent = !!(A->flags & ElementParentDirectory);
+    BOOL isDirBParent = !!(B->flags & ElementParentDirectory);
     BOOL isDirA = !!(A->flags & ElementDirectory);
     BOOL isDirB = !!(B->flags & ElementDirectory);
 
-    return isDirB - isDirA;
+    return (isDirB - isDirA) + (isDirBParent - isDirAParent);
 }
 
 int CompareByName(const void* a, const void* b, BOOL isAscending)

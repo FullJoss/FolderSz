@@ -39,6 +39,7 @@ HWND CreateMainWindow(const wchar_t *title, WindowDataInformation *info)
     wc.lpszClassName = L"WINDOW_SIMPLE";
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
     wc.hIcon = LoadIconW(hinstance, MAKEINTRESOURCEW(1));
+    wc.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
 
     RegisterClassW(&wc);
 
@@ -221,6 +222,14 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         int wheelDelta = GET_WHEEL_DELTA_WPARAM(wParam);
         HandleListViewMouseWheel(hwnd, wheelDelta, lParam, window_info->lfv);
         break;
+    }
+
+    case WM_LBUTTONDBLCLK:
+    {
+        int xPos = GET_X_LPARAM(lParam);
+        int yPos = GET_Y_LPARAM(lParam);
+        HandleListViewLButtonDoubleClick(hwnd, xPos, yPos, window_info->lfv);
+        return 0;
     }
 
     case WM_LBUTTONDOWN:

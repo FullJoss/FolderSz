@@ -17,6 +17,8 @@ wchar_t *LoadFolderDialog();
 
 ListFile* ScanFilePath(const wchar_t *dossierPath, ListFileView* lfv);
 
+void OnDoubleClickRow(HWND hwnd, ListFileView* lfv);
+
 // Call at cache.c
 void RefreshView(ListFileView* lfv);
 

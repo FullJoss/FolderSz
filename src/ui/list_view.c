@@ -33,6 +33,7 @@ static int ARROW_WIDTH = 10;
 static int ARROW_HEIGHT = 6;
 static int ARROW_MARGE_RIGHT = 10;
 
+static void SelectItem(HWND hWnd, ListFileView* lfv, int y);
 static inline void DrawHeaderTitle(HDC hdc, ColumnListView* col, int nb_col, RECT bounds, int indexHover, int indexSort, BOOL isAscending);
 static inline void DrawScrollBar(HDC hdc, ListFileView* __restrict lfv, int viewHeight, int totalContentHeight);
 static inline void DrawItem(HDC hdc, void* __restrict row, RECT rowBounds, RECT itemsArea, ColumnListView* col, int n_col);
@@ -96,7 +97,13 @@ void DrawListFileView(HDC hdc, ListFileView* lfv, RECT rcPaint) {
             if (rowBounds.bottom < itemsArea.top) continue;
             if (rowBounds.top > itemsArea.bottom) break;
 
-            if (i == lfv->indexRowHover)
+            if (i == lfv->indexRowSelect) {
+                RECT r = rowBounds;
+                r.left = rowBounds.left + 1;
+                FillRect(hdc, &r, g_brushs[IC_BTN_BORDER]);
+                FrameRect(hdc, &r, g_brushs[IC_BTN_HOVER_BORDER]);
+            }
+            else if (i == lfv->indexRowHover)
                 FillRect(hdc, &rowBounds, g_brushs[IC_BTN_HOVER]);
 
             DrawItem(hdc, row, rowBounds, itemsArea, lfv->columns, lfv->n_columns);
@@ -114,6 +121,16 @@ void DrawListFileView(HDC hdc, ListFileView* lfv, RECT rcPaint) {
     DrawHeaderTitle(hdc, lfv->columns, lfv->n_columns, lfv->bounds, lfv->indexColHover, lfv->indexColSort, lfv->ascendingSort);
 }
 
+void HandleListViewLButtonDoubleClick(HWND hWnd, int x, int y, ListFileView* lfv) {
+    if (PtInRect(&lfv->itemsArea, (POINT) { x, y })) {
+        int i = lfv->indexRowSelect;
+        SelectItem(hWnd, lfv, y);
+        if (i == lfv->indexRowSelect)
+        {
+            lfv->OnDoubleClickRow(hWnd, lfv);
+        }
+    }
+}
 
 void HandleListViewLButtonDown(HWND hWnd, int x, int y, ListFileView* lfv) {
    
@@ -128,6 +145,11 @@ void HandleListViewLButtonDown(HWND hWnd, int x, int y, ListFileView* lfv) {
         SortListFileView(lfv);
 
         InvalidateRect(hWnd, &lfv->bounds, FALSE);
+    }
+
+    if (PtInRect(&lfv->itemsArea, pt)) {
+        SelectItem(hWnd, lfv, y);
+        return;
     }
 
     if (!lfv->rows || !lfv->enableScroll)
@@ -269,10 +291,13 @@ void UpdateListFileView(HWND hwnd, ListFileView* lfv, ListFile* newlist, BOOL so
 
     int nb_elem = newlist->count;
 
-    if (newlist && nb_elem > 0) {
+    if (nb_elem == 0) {
+        lfv->rows = newlist->files;
+        lfv->n_rows = nb_elem;
+    }
+    else if (newlist && nb_elem > 0) {
 
         lfv->rows = newlist->files;
-
         lfv->n_rows = nb_elem;
 
 
@@ -309,7 +334,12 @@ void FreeListFileView(ListFileView* lfv) {
 
 
 
+static void SelectItem(HWND hWnd, ListFileView* lfv, int y) {
+    int i = GetHoverIndex(hWnd, y, lfv);
 
+    lfv->indexRowSelect = i;
+    InvalidateRect(hWnd, &lfv->itemsArea, NULL);
+}
 
 static inline void DrawHeaderTitle(HDC hdc, ColumnListView* col, int nb_col, RECT bounds, int indexHover, int indexSort, BOOL isAscending) {
     
@@ -366,6 +396,8 @@ static inline const wchar_t* GetRowTextElementFile(ElementFile* file, int i_col)
     case 1:
         if (file->flags & ElementSystem)
             return L"System File";
+        if (file->flags & ElementParentDirectory)
+            return L"-";
         StrFormatByteSizeW(file->size, sizeBuffer, ARRAYSIZE(sizeBuffer));
         return sizeBuffer;
     default:
