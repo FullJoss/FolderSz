@@ -147,7 +147,9 @@ void HandleListViewKeyDown(HWND hwnd, wchar_t key, ListFileView* lfv) {
         if (letterName == key || letterName - 32 == key) {
             lfv->indexRowSelect = iNext;
 
-            int newScrollPos = iNext * ROW_HEIGHT;
+            const int marge_y_selection = ROW_HEIGHT * 3;
+
+            int newScrollPos = iNext * ROW_HEIGHT - marge_y_selection;
 
             newScrollPos = CLAMP(newScrollPos, 0, lfv->maxScrollPos);
 
@@ -591,9 +593,7 @@ static inline void CalculateTrackThumb(ListFileView* lfv) {
 
     lfv->sbTrack = (RECT){ itemsArea.right, itemsArea.top, bounds.right, itemsArea.bottom };
 
-    int totalContentHeightExpect = (dataCount) * ROW_HEIGHT;
-    int totalGapHeight = dataCount * ROW_GAP;
-    int totalContentHeight = totalContentHeightExpect + totalGapHeight;
+    int totalContentHeight = dataCount * (ROW_HEIGHT + ROW_GAP);
     int viewHeight = RectHeight(&itemsArea);
 
     int thumbHeight = (viewHeight * viewHeight) / totalContentHeight;

@@ -36,7 +36,11 @@ void OnDoubleClickRow(HWND hwnd, ListFileView* lfv) {
         UpdateListFileView(hwnd, lfv, lf, TRUE);
     }
     else {
-        ShellExecute(hwnd, L"open", buffer, NULL, NULL, SW_SHOWNORMAL);
+        INT_PTR result = (INT_PTR)ShellExecuteW(hwnd, L"open", buffer, NULL, NULL, SW_SHOWNORMAL);
+
+        if (result <= 32) {
+            MessageBoxA(hwnd, "Error to open this file", "Execution error", MB_OK | MB_ICONERROR);
+        }
     }
 }
 
