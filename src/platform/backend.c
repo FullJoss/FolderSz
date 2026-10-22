@@ -152,6 +152,21 @@ BOOL GrowCapacity(void** ppArray, int* actualCapacity, size_t elementSize) {
     return TRUE;
 }
 
+SHELLEXECUTEINFOW GetShellExecInfo(HWND hwnd, wchar_t* filepath) {
+    SHELLEXECUTEINFOW sei = { 0 };
+
+    sei.cbSize = sizeof(SHELLEXECUTEINFOW); 
+    sei.fMask = SEE_MASK_FLAG_NO_UI;        
+    sei.hwnd = hwnd;                        
+    sei.lpVerb = L"open";                  
+    sei.lpFile = filepath;
+    sei.lpParameters = NULL;                
+    sei.lpDirectory = NULL;                 
+    sei.nShow = SW_SHOWNORMAL;             
+
+    return sei;
+}
+
 wchar_t GetLetterKey(WPARAM wParam) {
 
     WPARAM vkCode = wParam;

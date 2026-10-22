@@ -51,7 +51,7 @@ typedef enum
     ElementSystem = 1 << 1,
     ElementPartition = 1 << 2,
     ElementCache = 1 << 3,
-    ElementParentDirectory = 1 << 4,
+    ElementParentDirectory = (1 << 4),
 } ElementFlags;
 
 typedef struct

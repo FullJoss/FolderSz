@@ -207,6 +207,14 @@ static BOOL FilterSpecificPath(const wchar_t* path)
         return TRUE;
     if (_wcsicmp(path, L"C:\\$Recycle.Bin") == 0)
         return TRUE;
+    if (_wcsicmp(path, L"C:\\WinREAgent") == 0)
+        return TRUE;
+    if (_wcsicmp(path, L"C:\\Config.Msi") == 0)
+        return TRUE;
+    if (_wcsicmp(path, L"C:\\System Volume Information") == 0)
+        return TRUE;
+    if (_wcsicmp(path, L"C:\\MSOCache") == 0)
+        return TRUE;
 
     return FALSE;
 }

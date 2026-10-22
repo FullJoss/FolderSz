@@ -9,17 +9,33 @@
 #include "pch.h"
 #include "dialog.h"
 
+void MessageBox_Error(const wchar_t* text, const wchar_t* caption) {
+    MessageBoxW(
+        mainHwnd,
+        text,
+        caption,
+        MB_OK | MB_ICONERROR | MB_TASKMODAL
+    );
+}
+
 void MessageBox_View(const wchar_t *text)
 {
     MessageBoxW(mainHwnd, text, L"Attention !", MB_OK | MB_ICONINFORMATION);
 }
 
-int MessageBox_Confirm(const wchar_t *text)
+BOOL MessageBox_Confirm(const wchar_t* text, BOOL preferYes)
 {
-    return MessageBoxW(
+    UINT type = MB_YESNO | MB_ICONQUESTION;
+
+    if (!preferYes)
+        type |= MB_DEFBUTTON2;
+
+    int r = MessageBoxW(
         mainHwnd,                   
         text,                    
         L"Confirmation",      
-        MB_YESNO | MB_ICONQUESTION
+        type
     );
+
+    return (r == IDYES);
 }

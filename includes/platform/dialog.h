@@ -19,5 +19,6 @@
 #define DEBUG_PRINT(format, ...) ((void)0)
 #endif
 
+void MessageBox_Error(const wchar_t* text, const wchar_t* caption);
 void MessageBox_View(const wchar_t *text);
-int MessageBox_Confirm(const wchar_t *text);
+BOOL MessageBox_Confirm(const wchar_t* text, BOOL preferYes);

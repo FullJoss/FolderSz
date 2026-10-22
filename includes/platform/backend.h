@@ -14,6 +14,7 @@
 #include "choice_explorer.h"
 
 int Backend_GetOpenExplorers(ExplorerInfo* outList, int maxCapacity);
+SHELLEXECUTEINFOW GetShellExecInfo(HWND hwnd, wchar_t* filepath);
 wchar_t* Backend_ExctractFilePath(IShellItem* pItem);
 IShellItem* Backend_DeployDialogSelector(IFileOpenDialog* pDlg);
 

@@ -1,14 +1,12 @@
 #include "navigation.h"
 #include "feature.h"
 #include "list_view.h"
+#include "dialog.h"
+#include "backend.h"
 
 static void BackParentDirectory(wchar_t* path);
 static inline size_t LastAntiSlashSearch(wchar_t* path, size_t len);
 static inline void CutPath(wchar_t* path, size_t index);
-
-void OnKeyTouchNavigation() {
-
-}
 
 void OnDoubleClickRow(HWND hwnd, ListFileView* lfv) {
 
@@ -20,26 +18,37 @@ void OnDoubleClickRow(HWND hwnd, ListFileView* lfv) {
     int lengthTitle = GetWindowTextLengthW(hwnd);
     GetWindowTextW(hwnd, bufferCurrentPath, MAX_PATH);
 
-    PathCombineW(buffer, bufferCurrentPath, elem->name);
-
-    if (elem->flags & ElementCache || elem->flags & ElementPartition) {
-        return;
-    }
     if (elem->flags & ElementParentDirectory) {
+
         BackParentDirectory(bufferCurrentPath);
 
         ListFile* lf = ScanFilePath(bufferCurrentPath, lfv);
         UpdateListFileView(hwnd, lfv, lf, TRUE);
+        return;
+    }
+    else 
+        PathCombineW(buffer, bufferCurrentPath, elem->name);
+
+    if (elem->flags & ElementCache || elem->flags & ElementPartition) {
+        return;
     }
     else if (elem->flags & ElementDirectory) {
+
+        if (elem->flags & ElementSystem) {
+            BOOL user_has_accepted = MessageBox_Confirm(L"This is a system folder, do you want to continue?", FALSE);
+            if (!user_has_accepted)
+                return;
+        }
+
         ListFile* lf = ScanFilePath(buffer, lfv);
         UpdateListFileView(hwnd, lfv, lf, TRUE);
     }
     else {
-        INT_PTR result = (INT_PTR)ShellExecuteW(hwnd, L"open", buffer, NULL, NULL, SW_SHOWNORMAL);
+        SHELLEXECUTEINFOW sei = GetShellExecInfo(hwnd, buffer);
+        BOOL result = ShellExecuteExW(&sei);
 
-        if (result <= 32) {
-            MessageBoxA(hwnd, "Error to open this file", "Execution error", MB_OK | MB_ICONERROR);
+        if (!result) {
+            MessageBox_Error(L"Error to open this file", L"Execution error");
         }
     }
 }
