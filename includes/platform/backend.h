@@ -17,4 +17,5 @@ int Backend_GetOpenExplorers(ExplorerInfo* outList, int maxCapacity);
 wchar_t* Backend_ExctractFilePath(IShellItem* pItem);
 IShellItem* Backend_DeployDialogSelector(IFileOpenDialog* pDlg);
 
+wchar_t GetLetterKey(WPARAM wParam);
 BOOL GrowCapacity(void** ppArray, int* actualCapacity, size_t elementSize);

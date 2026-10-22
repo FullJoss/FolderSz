@@ -14,6 +14,7 @@
 #include "list_view.h"
 #include "cache.h"
 #include "dpi.h"
+#include "backend.h"
 
 static HDC hdcMem = NULL;
 static HBITMAP hBmp = NULL;
@@ -232,11 +233,18 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         return 0;
     }
 
+    case WM_KEYDOWN:
+    {
+        wchar_t key = GetLetterKey(wParam);
+        HandleListViewKeyDown(hwnd, key, window_info->lfv);
+        break;
+    }
+
+
     case WM_LBUTTONDOWN:
     {
         if (OnLeftButtonDown(hwnd, wParam, lParam, window_info) == 0)
             return 0;
-
         break;
     }
 

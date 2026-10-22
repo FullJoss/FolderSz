@@ -17,6 +17,7 @@ void HandleListViewLButtonDoubleClick(HWND hWnd, int x, int y, ListFileView* lfv
 void HandleListViewMouseMove(HWND hWnd, int x, int y, ListFileView* listView);
 void HandleListViewLButtonDown(HWND hWnd, int x, int y, ListFileView* listView);
 void HandleListViewMouseWheel(HWND hWnd, int wheelDelta, LPARAM lParam, ListFileView* listView);
+void HandleListViewKeyDown(HWND hwnd, wchar_t key, ListFileView* lfv);
 void UpdateListFileView(HWND hwnd, ListFileView* lfv, ListFile* newlist, BOOL sort);
 void FreeListFileView(ListFileView* lfv);
 

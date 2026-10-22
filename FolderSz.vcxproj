@@ -142,6 +142,7 @@
     <ClCompile Include="src\core\cache.c" />
     <ClCompile Include="src\core\event.c" />
     <ClCompile Include="src\core\feature.c" />
+    <ClCompile Include="src\core\navigation.c" />
     <ClCompile Include="src\core\tick.c" />
     <ClCompile Include="src\main.c" />
     <ClCompile Include="src\pch.c" />
@@ -159,6 +160,7 @@
     <ClInclude Include="includes\core\cache.h" />
     <ClInclude Include="includes\core\event.h" />
     <ClInclude Include="includes\core\feature.h" />
+    <ClInclude Include="includes\core\navigation.h" />
     <ClInclude Include="includes\core\tick.h" />
     <ClInclude Include="includes\pch.h" />
     <ClInclude Include="includes\platform\backend.h" />

@@ -13,9 +13,6 @@
 #include "dialog.h"
 #include "backend.h"
 #include "tick.h"
-#include <pathcch.h>
-
-#pragma comment(lib, "Pathcch.lib")
 
 static ListFile listFile = { NULL, 0, 0 };
 wchar_t *current_path = NULL;
@@ -90,6 +87,11 @@ static BOOL ManageMaxCapacity()
     return TRUE;
 }
 
+
+
+
+
+
 ListFile* ScanFilePath(const wchar_t *dossierPath, ListFileView* lfv)
 {
     HCURSOR hOldCursor = ChangeCursor();
@@ -130,7 +132,7 @@ ListFile* ScanFilePath(const wchar_t *dossierPath, ListFileView* lfv)
             wcscpy_s(element->name, MAX_PATH, findData.cFileName);
 
             wchar_t cheminComplet[MAX_PATH];
-            PathCchCombine(cheminComplet, MAX_PATH, dossierPath, findData.cFileName);
+            PathCombineW(cheminComplet, dossierPath, findData.cFileName);
 
             if (wcscmp(findData.cFileName, L"..") == 0) {
                 element->flags = ElementParentDirectory | ElementDirectory;
@@ -160,40 +162,12 @@ void RefreshView(ListFileView* lfv) {
     }
 }
 
-void OnDoubleClickRow(HWND hwnd, ListFileView* lfv) {
 
-    ElementFile* elem = (char*)lfv->rows + lfv->indexRowSelect * sizeof(ElementFile);
-    
-    wchar_t buffer[MAX_PATH];
-    wchar_t bufferCurrentPath[MAX_PATH];
 
-    int lengthTitle = GetWindowTextLengthW(hwnd);
-    GetWindowText(hwnd, &bufferCurrentPath, MAX_PATH);
 
-    PathCchCombine(buffer, MAX_PATH, bufferCurrentPath, elem->name);
 
-    if (elem->flags & ElementCache || elem->flags & ElementPartition) {
-        return;
-    }
-    if (elem->flags & ElementParentDirectory) {
-        HRESULT hr = PathCchRemoveFileSpec(bufferCurrentPath, MAX_PATH);
 
-        if (SUCCEEDED(hr)) {
-            ListFile* lf = ScanFilePath(bufferCurrentPath, lfv);
-            UpdateListFileView(hwnd, lfv, lf, TRUE);
-        }
-    }
-    else if (elem->flags & ElementDirectory) {
-        ListFile* lf = ScanFilePath(buffer, lfv);
-        UpdateListFileView(hwnd, lfv, lf, TRUE);
-    }
-    else {
-        ShellExecute(hwnd, L"open", buffer, NULL, NULL, SW_SHOWNORMAL);
-    }
 
-    DEBUG_PRINT("CLICK DOUBLE !!!!");
-    DEBUG_PRINT("bufer");
-}
 
 static inline void PushData(wchar_t *pathElement, ElementFile* element, WIN32_FIND_DATAW *data, ListFileView* lfv) {
 
@@ -271,35 +245,4 @@ static inline HCURSOR ChangeCursor() {
 static inline void RestorCursor(HCURSOR hOldCursor) {
     ReleaseCapture();
     SetCursor(hOldCursor);
-}
-
-static void BackParentDirectory(wchar_t* path) {
-    size_t len = wcslen(path);
-    if (len <= 3) return; // Déjà à la racine (ex: "C:\") ou vide, on ne fait rien
-
-    // 1. Si le chemin se termine par un ou plusieurs antislashs (ex: "C:\Dossier\")
-    // on les ignore en réduisant virtuellement la taille de recherche
-    while (len > 3 && path[len - 1] == L'\\') {
-        len--;
-    }
-
-    // 2. Trouver le VRAI dernier antislash de séparation
-    size_t indexDernierSlash = 0;
-    for (size_t i = 0; i < len; i++) {
-        if (path[i] == L'\\') {
-            indexDernierSlash = i;
-        }
-    }
-
-    // 3. Appliquer la coupure au bon endroit
-    if (indexDernierSlash > 0) {
-        // Cas particulier : si le dernier slash est celui de la racine (ex: "C:\Dossier")
-        if (indexDernierSlash == 2 && path[1] == L':') {
-            path[3] = L'\0'; // On garde "C:\"
-        }
-        // Cas normal (ex: "C:\Dossier1\SousDossier2")
-        else {
-            path[indexDernierSlash] = L'\0'; // Coupe pile sur le '\'
-        }
-    }
 }

@@ -78,6 +78,9 @@
     <ClCompile Include="src\platform\backend.c">
       <Filter>Source Files\platform</Filter>
     </ClCompile>
+    <ClCompile Include="src\core\navigation.c">
+      <Filter>Source Files\core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
@@ -126,6 +129,9 @@
       <Filter>Header Files\core</Filter>
     </ClInclude>
     <ClInclude Include="includes\core\cache.h">
+      <Filter>Header Files\core</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\core\navigation.h">
       <Filter>Header Files\core</Filter>
     </ClInclude>
   </ItemGroup>

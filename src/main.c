@@ -17,6 +17,7 @@
 #include "feature.h"
 #include "event.h"
 #include "layout.h"
+#include "navigation.h"
 
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "dwmapi.lib")

@@ -132,6 +132,34 @@ void HandleListViewLButtonDoubleClick(HWND hWnd, int x, int y, ListFileView* lfv
     }
 }
 
+void HandleListViewKeyDown(HWND hwnd, wchar_t key, ListFileView* lfv) {
+    int iSelect = lfv->indexRowSelect;
+    int iLimit = lfv->n_rows;
+    
+    if (iSelect < 0 || iSelect >= iLimit)
+        return;
+    
+    size_t iNext = (iSelect + 1) % iLimit;
+    for (iNext; iNext != iSelect; iNext=(iNext + 1) % iLimit) {
+        ElementFile* file = (ElementFile*)lfv->rows + iNext;
+        wchar_t letterName = file->name[0];
+
+        if (letterName == key || letterName - 32 == key) {
+            lfv->indexRowSelect = iNext;
+
+            int newScrollPos = iNext * ROW_HEIGHT;
+
+            newScrollPos = CLAMP(newScrollPos, 0, lfv->maxScrollPos);
+
+            lfv->scrollPos = newScrollPos;
+            InvalidateRect(hwnd, &lfv->bounds, FALSE);
+            return;
+        }
+    }
+
+    MessageBeep(MB_ICONHAND);
+}
+
 void HandleListViewLButtonDown(HWND hWnd, int x, int y, ListFileView* lfv) {
    
     POINT pt = { x, y };
@@ -563,7 +591,7 @@ static inline void CalculateTrackThumb(ListFileView* lfv) {
 
     lfv->sbTrack = (RECT){ itemsArea.right, itemsArea.top, bounds.right, itemsArea.bottom };
 
-    int totalContentHeightExpect = (dataCount - 1) * ROW_HEIGHT;
+    int totalContentHeightExpect = (dataCount) * ROW_HEIGHT;
     int totalGapHeight = dataCount * ROW_GAP;
     int totalContentHeight = totalContentHeightExpect + totalGapHeight;
     int viewHeight = RectHeight(&itemsArea);

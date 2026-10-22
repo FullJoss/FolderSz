@@ -8,6 +8,7 @@
 
 #include "backend.h"
 
+#define DIFF_UPPER_LOWER_CASE 32
 #define SAFE_RELEASE(p) do { if (p) { (p)->lpVtbl->Release(p); (p) = NULL; } } while(0)
 
 // =========================================================================
@@ -149,4 +150,16 @@ BOOL GrowCapacity(void** ppArray, int* actualCapacity, size_t elementSize) {
     *ppArray = tmp;
 
     return TRUE;
+}
+
+wchar_t GetLetterKey(WPARAM wParam) {
+
+    WPARAM vkCode = wParam;
+
+    if (vkCode >= 'A' && vkCode <= 'Z')
+    {
+        return (wchar_t)vkCode;
+    }
+
+    return 0;
 }
