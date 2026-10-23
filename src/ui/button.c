@@ -63,7 +63,7 @@ static inline void WriteText(HDC hdc, Button* button) {
     SetTextColor(hdc, g_colors[IC_TEXT]);
     SetBkMode(hdc, TRANSPARENT);
 
-    DrawTextW(hdc, button->text, -1, (RECT*)&button->bounds, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    DrawTextW(hdc, button->text, -1, &button->bounds, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 }
 
 static inline void DrawBorder(HDC hdc, Button* button) {

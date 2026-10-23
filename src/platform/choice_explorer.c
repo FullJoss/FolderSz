@@ -10,6 +10,7 @@
 #include "theme.h"
 #include "backend.h"
 #include "type.h"
+#include "dialog.h"
 
 #pragma comment(lib, "dwmapi.lib")
 
@@ -59,7 +60,7 @@ BOOL CreateChoiceExplorer(HWND hwndParent, wchar_t *outPath, DWORD maxLen)
 
     g_indexSelection = -1;
 
-    HINSTANCE hInst = GetModuleHandle(NULL);
+    HINSTANCE hInst = (HINSTANCE)GetWindowLongPtrW(hwndParent, GWLP_HINSTANCE);
 
     CreateClassRegistration(L"ModernAltTabClass", hInst);
 
@@ -72,6 +73,11 @@ BOOL CreateChoiceExplorer(HWND hwndParent, wchar_t *outPath, DWORD maxLen)
         popupStyle,
         win.left, win.top, win.right, win.bottom,
         hwndParent, NULL, hInst, NULL);
+
+    if (hwndPopup == NULL) {
+        DWORD error = GetLastError();
+        DEBUG_PRINT("%d", error);
+    }
 
     if (hwndPopup != NULL)
     {
@@ -160,6 +166,11 @@ LRESULT CALLBACK AltTabChoixProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
     {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hwnd, &ps);
+
+        RECT windowRect;
+        GetClientRect(hwnd, &windowRect);
+        SetBkColor(hdc, g_colors[IC_WINDOW_COLOR]);
+        ExtTextOutW(hdc, 0, 0, ETO_OPAQUE, &windowRect, L"", 0, NULL);
 
         SetTextColor(hdc, g_colors[IC_TEXT]);
         SetBkMode(hdc, TRANSPARENT);
@@ -270,7 +281,7 @@ static inline void CreateClassRegistration(const wchar_t* classname, HINSTANCE h
     WNDCLASSW wc = { 0 };
     wc.lpfnWndProc = AltTabChoixProc;
     wc.hInstance = hInst;
-    wc.hbrBackground = g_brushs[IC_WINDOW_COLOR];
+    wc.hbrBackground = NULL;
     wc.lpszClassName = classname;
     wc.style = CS_DBLCLKS;
     RegisterClassW(&wc);

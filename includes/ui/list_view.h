@@ -20,6 +20,7 @@ void HandleListViewMouseWheel(HWND hWnd, int wheelDelta, LPARAM lParam, ListFile
 void HandleListViewKeyDown(HWND hwnd, wchar_t key, ListFileView* lfv);
 void UpdateListFileView(HWND hwnd, ListFileView* lfv, ListFile* newlist, BOOL sort);
 void FreeListFileView(ListFileView* lfv);
+void UpdateDPIListView();
 
 static inline int RectW(const RECT* r) { return r->right - r->left; }
 static inline int RectHeight(const RECT* r) { return r->bottom - r->top; }

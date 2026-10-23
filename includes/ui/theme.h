@@ -16,6 +16,16 @@ typedef enum {
     IC_BTN_CLICK,
     IC_BTN_BORDER,
     IC_BTN_HOVER_BORDER,
+    IC_LV_BACKGROUND,
+    IC_LV_BORDER,
+    IC_LV_TRACK,
+    IC_LV_THUMB,
+    IC_LV_THUMB_DRAG,
+    IC_LV_ROW_SELECT,
+    IC_LV_ROW_SELECT_BORDER,
+    IC_LV_ROW_HOVER,
+    IC_LV_HEAD,
+    IC_LV_HEAD_HOVER,
     IC_TEXT,
     IC_COUNT
 } ColorIndex;
@@ -31,3 +41,4 @@ void InitTheme();
 void FreeTheme();
 void SetListViewTheme(HWND);
 void SetTitleWindowTheme(HWND hWnd);
+void ResyncColorTheme();

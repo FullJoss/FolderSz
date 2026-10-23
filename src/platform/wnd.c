@@ -15,6 +15,7 @@
 #include "cache.h"
 #include "dpi.h"
 #include "backend.h"
+#include "theme.h"
 
 static HDC hdcMem = NULL;
 static HBITMAP hBmp = NULL;
@@ -185,7 +186,20 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
         SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)window_info);
 
+        UpdateDPIListView();
+
         return 0;
+    }
+
+    case WM_SETTINGCHANGE: {
+        // lParam contient le nom de la section modifiée. 
+        // Si lParam est nul ou pointe vers "ImmersiveColorSet", le thème a changé.
+        if (lParam && wcscmp((const wchar_t*)lParam, L"ImmersiveColorSet") == 0) {
+            ResyncColorTheme();
+            SetTitleWindowTheme(hwnd);
+            InvalidateRect(hwnd, NULL, TRUE);
+        }
+        break;
     }
 
     case WM_MOUSEMOVE:

@@ -14,11 +14,10 @@
 #include "dpi.h"
 
 #define CLAMP(val, vmin, vmax) ( ((val) < (vmin)) ? (vmin) : (((val) > (vmax)) ? (vmax) : (val)) )
-#define ROW_GAP             2
+#define ROW_GAP             0
 #define ICON_PADDING        6
 #define TEXT_PADDING        10
 #define SCROLLBAR_WIDTH     14
-#define COL_HEADER_HEIGHT   34
 #define MIN_THUMB_HEIGHT    20
 
 typedef struct {
@@ -32,6 +31,7 @@ static int ICON_SIZE = 16;
 static int ARROW_WIDTH = 10;
 static int ARROW_HEIGHT = 6;
 static int ARROW_MARGE_RIGHT = 10;
+static int COL_HEADER_HEIGHT = 34;
 
 static void SelectItem(HWND hWnd, ListFileView* lfv, int y);
 static inline void DrawHeaderTitle(HDC hdc, ColumnListView* col, int nb_col, RECT bounds, int indexHover, int indexSort, BOOL isAscending);
@@ -70,7 +70,7 @@ void DrawSortArrow(HDC hdc, RECT rcColumn, BOOL isAscending);
 
 void DrawListFileView(HDC hdc, ListFileView* lfv, RECT rcPaint) {
 
-    FillRect(hdc, &lfv->bounds, g_brushs[IC_BTN_BACKGROUND]);
+    FillRect(hdc, &lfv->bounds, g_brushs[IC_LV_BACKGROUND]);
 
     SetBkMode(hdc, TRANSPARENT);
 
@@ -98,13 +98,12 @@ void DrawListFileView(HDC hdc, ListFileView* lfv, RECT rcPaint) {
             if (rowBounds.top > itemsArea.bottom) break;
 
             if (i == lfv->indexRowSelect) {
-                RECT r = rowBounds;
-                r.left = rowBounds.left + 1;
-                FillRect(hdc, &r, g_brushs[IC_BTN_BORDER]);
-                FrameRect(hdc, &r, g_brushs[IC_BTN_HOVER_BORDER]);
+                rowBounds.left += 1;
+                FillRect(hdc, &rowBounds, g_brushs[IC_LV_ROW_SELECT]);
+                FrameRect(hdc, &rowBounds, g_brushs[IC_LV_ROW_SELECT_BORDER]);
             }
             else if (i == lfv->indexRowHover)
-                FillRect(hdc, &rowBounds, g_brushs[IC_BTN_HOVER]);
+                FillRect(hdc, &rowBounds, g_brushs[IC_LV_ROW_HOVER]);
 
             DrawItem(hdc, row, rowBounds, itemsArea, lfv->columns, lfv->n_columns);
         }
@@ -116,7 +115,7 @@ void DrawListFileView(HDC hdc, ListFileView* lfv, RECT rcPaint) {
         }
     }
 
-    FrameRect(hdc, &lfv->bounds, g_brushs[IC_BTN_BORDER]);
+    FrameRect(hdc, &lfv->bounds, g_brushs[IC_LV_BORDER]);
 
     DrawHeaderTitle(hdc, lfv->columns, lfv->n_columns, lfv->bounds, lfv->indexColHover, lfv->indexColSort, lfv->ascendingSort);
 }
@@ -300,18 +299,18 @@ void HandleListViewMouseWheel(HWND hWnd, int wheelDelta, LPARAM lParam, ListFile
 
 
 
-
-
-
-void UpdateListFileView(HWND hwnd, ListFileView* lfv, ListFile* newlist, BOOL sort)
-{
+void UpdateDPIListView() {
     // DPI
-    ROW_HEIGHT = DPI_CONST(26);
+    ROW_HEIGHT = DPI_CONST(32);
     ICON_SIZE = DPI_CONST(16);
     ARROW_WIDTH = DPI_CONST(10);
     ARROW_HEIGHT = DPI_CONST(6);
     ARROW_MARGE_RIGHT = DPI_CONST(10);
+    COL_HEADER_HEIGHT = DPI_CONST(34);
+}
 
+void UpdateListFileView(HWND hwnd, ListFileView* lfv, ListFile* newlist, BOOL sort)
+{
     lfv->indexColHover = -1;
     lfv->indexRowHover = -1;
 
@@ -376,8 +375,9 @@ static inline void DrawHeaderTitle(HDC hdc, ColumnListView* col, int nb_col, REC
     if (!col || nb_col == 0) return;
     
     RECT headerZone = bounds;
-    headerZone.right -= SCROLLBAR_WIDTH;
     headerZone.bottom = bounds.top + COL_HEADER_HEIGHT;
+
+    FillRect(hdc, &headerZone, g_brushs[IC_LV_HEAD]);
 
     SetTextColor(hdc, g_colors[IC_TEXT]);
 
@@ -394,12 +394,9 @@ static inline void DrawHeaderTitle(HDC hdc, ColumnListView* col, int nb_col, REC
 
         if (i == indexHover)
         {
-            FillRect(hdc, &titleZone, g_brushs[IC_BTN_HOVER]);
-            FrameRect(hdc, &titleZone, g_brushs[IC_BTN_HOVER_BORDER]);
+            FillRect(hdc, &titleZone, g_brushs[IC_LV_HEAD_HOVER]);
         }
-        else {
-            FrameRect(hdc, &titleZone, g_brushs[IC_BTN_BORDER]);
-        }
+        FrameRect(hdc, &titleZone, g_brushs[IC_LV_BORDER]);
 
         if (i == indexSort) {
             DrawSortArrow(hdc, titleZone, isAscending);
@@ -411,12 +408,14 @@ static inline void DrawHeaderTitle(HDC hdc, ColumnListView* col, int nb_col, REC
 }
 
 static inline void DrawScrollBar(HDC hdc, ListFileView* __restrict lfv, int viewHeight, int totalContentHeight) {
-    FillRect(hdc, &lfv->sbTrack, g_brushs[IC_BTN_HOVER]);
+    FillRect(hdc, &lfv->sbTrack, g_brushs[IC_LV_TRACK]);
 
-    ColorIndex iColor = lfv->isDraggingScroll ? IC_BTN_BORDER : IC_BTN_CLICK;
-    
     RECT sbThumb = GetThumbRect(lfv);
-    FillRect(hdc, &sbThumb, g_brushs[iColor]);
+    RECT thumbView = { sbThumb.left+1, sbThumb.top+1, sbThumb.right-1, sbThumb.bottom-1 };
+    FillRect(hdc, &thumbView, g_brushs[IC_LV_THUMB]);
+    
+    if (lfv->isDraggingScroll)
+        FrameRect(hdc, &thumbView, g_brushs[IC_LV_THUMB_DRAG]);
 }
 
 static inline const wchar_t* GetRowTextElementFile(ElementFile* file, int i_col) {
@@ -662,9 +661,7 @@ static void CustomSort(void* tab, size_t nb, size_t sizeElem, CallbackSort funcS
     free(temp);
 }
 
-// ============================================================================
-// RESPONSABILITÉ : Dessine une petite flèche de tri (triangle plein) en GDI
-// ============================================================================
+
 void DrawSortArrow(HDC hdc, RECT rcColumn, BOOL isAscending) {
 
     int centerY = rcColumn.top + ((rcColumn.bottom - rcColumn.top) - ARROW_HEIGHT) / 2;

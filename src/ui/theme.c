@@ -29,7 +29,7 @@ static inline void FillBrushWithColor();
 static inline BOOL IsDarkMode();
 static inline void GetAccessHSystemList();
 static HFONT CreateCustomFont(const wchar_t* fontName, int size, int weight, BOOL useItalic);
-
+static void SyncColorTheme();
 
 void InitTheme()
 {
@@ -37,13 +37,7 @@ void InitTheme()
 
     g_font = CreateCustomFont(L"Segoe UI", 10, FW_MEDIUM, FALSE);
 
-    isDarkMode = IsDarkMode();
-
-    if (isDarkMode)
-        FillVarColorDark();
-    else
-        FillVarColorLight();
-
+    SyncColorTheme();
     FillBrushWithColor();
 
     CONST_PEN_SELECTION = CreatePen(PS_SOLID, 3, RGB(0, 120, 225));
@@ -54,6 +48,12 @@ void FreeTheme()
     DeleteObject(g_font);
     DeleteObject(CONST_PEN_SELECTION);
     FreeBrushs();
+}
+
+void ResyncColorTheme() {
+    FreeBrushs();
+    SyncColorTheme();
+    FillBrushWithColor();
 }
 
 void SetTitleWindowTheme(HWND hWnd) {
@@ -137,25 +137,60 @@ static inline void GetAccessHSystemList() {
     );
 }
 
-static inline void FillVarColorDark() {
-    g_colors[IC_WINDOW_COLOR] = RGB(25, 25, 25);
+static void SyncColorTheme() {
+    isDarkMode = IsDarkMode();
 
-    g_colors[IC_BTN_BACKGROUND] = RGB(30, 30, 30);
+    if (isDarkMode)
+        FillVarColorDark();
+    else
+        FillVarColorLight();
+}
+
+static inline void FillVarColorDark() {
+
+    g_colors[IC_WINDOW_COLOR] = RGB(28, 28, 28);    
+    g_colors[IC_BTN_BACKGROUND] = RGB(40, 40, 40);  
     g_colors[IC_BTN_HOVER] = RGB(45, 45, 45);
-    g_colors[IC_BTN_CLICK] = RGB(60, 60, 60);
-    g_colors[IC_BTN_BORDER] = RGB(85, 85, 85);
-    g_colors[IC_BTN_HOVER_BORDER] = RGB(220, 220, 220);
-    g_colors[IC_TEXT] = RGB(255, 255, 255);
+    g_colors[IC_BTN_CLICK] = RGB(35, 35, 35);
+    g_colors[IC_BTN_BORDER] = RGB(70, 70, 70); 
+    g_colors[IC_BTN_HOVER_BORDER] = RGB(0, 125, 237);
+
+    g_colors[IC_LV_BACKGROUND] = RGB(28, 28, 28);     
+    g_colors[IC_LV_BORDER] = RGB(43, 43, 43);     
+    g_colors[IC_LV_TRACK] = RGB(32, 32, 32);  
+    g_colors[IC_LV_THUMB] = RGB(74, 74, 74); 
+    g_colors[IC_LV_THUMB_DRAG] = RGB(0, 120, 212);  
+    g_colors[IC_LV_ROW_SELECT] = RGB(45, 45, 45);
+    g_colors[IC_LV_ROW_SELECT_BORDER] = RGB(0, 125, 237);
+    g_colors[IC_LV_ROW_HOVER] = RGB(38, 38, 38);    
+    g_colors[IC_LV_HEAD] = RGB(32, 32, 32);   
+    g_colors[IC_LV_HEAD_HOVER] = RGB(40, 40, 40); 
+
+
+
+    g_colors[IC_TEXT] = RGB(230, 230, 240);
 }
 
 static inline void FillVarColorLight() {
-    g_colors[IC_WINDOW_COLOR] = RGB(248, 250, 252);
 
-    g_colors[IC_BTN_BACKGROUND] = RGB(245, 245, 245);
-    g_colors[IC_BTN_HOVER] = RGB(230, 230, 230);
-    g_colors[IC_BTN_CLICK] = RGB(200, 200, 200);
-    g_colors[IC_BTN_BORDER] = RGB(180, 180, 180);
-    g_colors[IC_BTN_HOVER_BORDER] = RGB(0, 120, 125);
+    g_colors[IC_WINDOW_COLOR] = RGB(255, 255, 255);
+    g_colors[IC_BTN_BACKGROUND] = RGB(245, 245, 247); 
+    g_colors[IC_BTN_HOVER] = RGB(235, 235, 240);
+    g_colors[IC_BTN_CLICK] = RGB(225, 225, 230); 
+    g_colors[IC_BTN_BORDER] = RGB(220, 220, 225); 
+    g_colors[IC_BTN_HOVER_BORDER] = RGB(160, 160, 170); 
+
+    g_colors[IC_LV_BACKGROUND] = RGB(255, 255, 255); 
+    g_colors[IC_LV_BORDER] = RGB(225, 225, 230);
+    g_colors[IC_LV_TRACK] = RGB(245, 245, 247);  
+    g_colors[IC_LV_THUMB] = RGB(200, 200, 205); 
+    g_colors[IC_LV_THUMB_DRAG] = RGB(140, 140, 145); 
+    g_colors[IC_LV_ROW_SELECT] = RGB(230, 242, 255); 
+    g_colors[IC_LV_ROW_SELECT_BORDER] = RGB(0, 125, 237);
+    g_colors[IC_LV_ROW_HOVER] = RGB(245, 247, 250);  
+    g_colors[IC_LV_HEAD] = RGB(245, 245, 247);  
+    g_colors[IC_LV_HEAD_HOVER] = RGB(235, 235, 240);
+
     g_colors[IC_TEXT] = RGB(0, 0, 0);
 }
 
