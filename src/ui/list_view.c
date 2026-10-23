@@ -54,7 +54,7 @@ static inline int GetNewScrollPos(int ymouse, ListFileView* lfv);
 static void CustomSort(void* tab, size_t nb, size_t sizeElem, CallbackSort funcSort, BOOL isAscending);
 static inline int FindIndexHeaderTitle(int x, int initial, ColumnListView* col, int nCol);
 void DrawSortArrow(HDC hdc, RECT rcColumn, BOOL isAscending);
-
+static inline void GetIconSize(int* out);
 
 
 
@@ -302,7 +302,7 @@ void HandleListViewMouseWheel(HWND hWnd, int wheelDelta, LPARAM lParam, ListFile
 void UpdateDPIListView() {
     // DPI
     ROW_HEIGHT = DPI_CONST(32);
-    ICON_SIZE = DPI_CONST(16);
+    GetIconSize(&ICON_SIZE);
     ARROW_WIDTH = DPI_CONST(10);
     ARROW_HEIGHT = DPI_CONST(6);
     ARROW_MARGE_RIGHT = DPI_CONST(10);
@@ -687,4 +687,13 @@ void DrawSortArrow(HDC hdc, RECT rcColumn, BOOL isAscending) {
 
     SelectObject(hdc, hOldBrush);
     SelectObject(hdc, hOldPen);
+}
+
+static inline void GetIconSize(int* out) {
+    int width = 0;
+    int height = 0;
+
+    if (ImageList_GetIconSize(g_systemImageList, &width, &height)) {
+        *out = height;
+    }
 }
