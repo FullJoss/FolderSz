@@ -7,57 +7,41 @@
 static void BackParentDirectory(wchar_t* path);
 static inline size_t LastAntiSlashSearch(wchar_t* path, size_t len);
 static inline void CutPath(wchar_t* path, size_t index);
+static inline void ExploreDir(HWND hwnd, wchar_t* path, ListFileView* lfv);
+static inline void ExploreOrExecute(HWND hwnd, ElementFile* elem, wchar_t* buffer, ListFileView* lfv);
 
 void OnDoubleClickRow(HWND hwnd, ListFileView* lfv) {
 
-    ElementFile* elem = (char*)lfv->rows + lfv->indexRowSelect * sizeof(ElementFile);
+    ElementFile* elem = (ElementFile*)lfv->rows + lfv->indexRowSelect;
+
+    if (elem->flags & (ElementCache | ElementPartition)) {
+        return;
+    }
 
     wchar_t buffer[MAX_PATH];
-    wchar_t bufferCurrentPath[MAX_PATH];
 
-    int lengthTitle = GetWindowTextLengthW(hwnd);
+    wchar_t bufferCurrentPath[MAX_PATH];
     GetWindowTextW(hwnd, bufferCurrentPath, MAX_PATH);
 
     if (elem->flags & ElementParentDirectory) {
-
         BackParentDirectory(bufferCurrentPath);
-
-        ListFile* lf = ScanFilePath(bufferCurrentPath, lfv);
-        UpdateListFileView(hwnd, lfv, lf, TRUE);
+        ExploreDir(hwnd, bufferCurrentPath, lfv);
         return;
     }
-    else 
-        PathCombineW(buffer, bufferCurrentPath, elem->name);
-
-    if (elem->flags & ElementCache || elem->flags & ElementPartition) {
-        return;
-    }
-    else if (elem->flags & ElementDirectory) {
-
-        if (elem->flags & ElementSystem) {
-            BOOL user_has_accepted = MessageBox_Confirm(L"This is a system folder, do you want to continue?", FALSE);
-            if (!user_has_accepted)
-                return;
-        }
-
-        ListFile* lf = ScanFilePath(buffer, lfv);
-        UpdateListFileView(hwnd, lfv, lf, TRUE);
-    }
-    else {
-        SHELLEXECUTEINFOW sei = GetShellExecInfo(hwnd, buffer);
-        BOOL result = ShellExecuteExW(&sei);
-
-        if (!result) {
-            MessageBox_Error(L"Error to open this file", L"Execution error");
-        }
-    }
+    
+    PathCombineW(buffer, bufferCurrentPath, elem->name);
+    
+    ExploreOrExecute(hwnd, elem, buffer, lfv);
 }
 
 static void BackParentDirectory(wchar_t* path) {
     size_t len = wcslen(path);
-    if (len <= 3) return; // 3 is "C:\"
 
-    while (len > 3 && path[len - 1] == L'\\') {
+    const size_t minLen = wcslen(L"C:\\");
+
+    if (len <= minLen) return;
+
+    while (len > minLen && path[len - 1] == L'\\') {
         len--;
     }
 
@@ -69,14 +53,39 @@ static void BackParentDirectory(wchar_t* path) {
 }
 
 static inline size_t LastAntiSlashSearch(wchar_t *path, size_t len) {
-    size_t iLastSlash = 0;
-    for (size_t i = 0; i < len; i++) {
+    for (size_t i = len; i > 0; i--) {
         if (path[i] == L'\\') {
-            iLastSlash = i;
+            return i;
         }
     }
 
-    return iLastSlash;
+    return 0;
+}
+
+static inline void ExploreOrExecute(HWND hwnd, ElementFile* elem, wchar_t* buffer, ListFileView* lfv) {
+    if (elem->flags & ElementDirectory) {
+
+        if (elem->flags & ElementSystem) {
+            BOOL user_has_accepted = MessageBox_Confirm(L"This is a system folder, do you want to continue?", FALSE);
+            if (!user_has_accepted)
+                return;
+        }
+
+        ExploreDir(hwnd, buffer, lfv);
+    }
+    else {
+        SHELLEXECUTEINFOW sei = GetShellExecInfo(hwnd, buffer);
+        BOOL result = ShellExecuteExW(&sei);
+
+        if (!result) {
+            MessageBox_Error(L"Error to open this file", L"Execution error");
+        }
+    }
+}
+
+static inline void ExploreDir(HWND hwnd, wchar_t* path, ListFileView* lfv) {
+    ListFile* lf = ScanFilePath(path, lfv);
+    UpdateListFileView(hwnd, lfv, lf, TRUE);
 }
 
 static inline void CutPath(wchar_t* path, size_t index) {
