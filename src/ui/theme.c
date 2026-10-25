@@ -175,16 +175,16 @@ static inline void FillVarColorLight() {
 
     g_colors[IC_WINDOW_COLOR] = RGB(255, 255, 255);
     g_colors[IC_BTN_BACKGROUND] = RGB(245, 245, 247); 
-    g_colors[IC_BTN_HOVER] = RGB(235, 235, 240);
+    g_colors[IC_BTN_HOVER] = RGB(230, 230, 240);
     g_colors[IC_BTN_CLICK] = RGB(225, 225, 230); 
     g_colors[IC_BTN_BORDER] = RGB(220, 220, 225); 
-    g_colors[IC_BTN_HOVER_BORDER] = RGB(160, 160, 170); 
+    g_colors[IC_BTN_HOVER_BORDER] = RGB(0, 125, 237);
 
     g_colors[IC_LV_BACKGROUND] = RGB(255, 255, 255); 
     g_colors[IC_LV_BORDER] = RGB(225, 225, 230);
     g_colors[IC_LV_TRACK] = RGB(245, 245, 247);  
     g_colors[IC_LV_THUMB] = RGB(200, 200, 205); 
-    g_colors[IC_LV_THUMB_DRAG] = RGB(140, 140, 145); 
+    g_colors[IC_LV_THUMB_DRAG] = RGB(0, 120, 212);
     g_colors[IC_LV_ROW_SELECT] = RGB(230, 242, 255); 
     g_colors[IC_LV_ROW_SELECT_BORDER] = RGB(0, 125, 237);
     g_colors[IC_LV_ROW_HOVER] = RGB(245, 247, 250);  

@@ -414,9 +414,9 @@ static void FindRowWithKey(HWND hwnd, wchar_t key, ListFileView* lfv) {
         if (letterName == key || letterName - 32 == key) {
             lfv->indexRowSelect = iNext;
 
-            const int marge_y_selection = ROW_HEIGHT * 3;
+            const size_t marge_y_selection = ROW_HEIGHT * 3;
 
-            int newScrollPos = iNext * ROW_HEIGHT - marge_y_selection;
+            size_t newScrollPos = iNext * ROW_HEIGHT - marge_y_selection;
 
             newScrollPos = CLAMP(newScrollPos, 0, lfv->maxScrollPos);
 
