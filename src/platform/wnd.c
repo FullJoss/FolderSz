@@ -249,9 +249,8 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
     case WM_KEYDOWN:
     {
-        wchar_t key = GetLetterKey(wParam);
-        HandleListViewKeyDown(hwnd, key, window_info->lfv);
-        break;
+        HandleListViewKeyDown(hwnd, wParam, window_info->lfv);
+        return 0;
     }
 
 

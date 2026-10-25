@@ -95,7 +95,7 @@ typedef struct {
     unsigned int n_columns;
     unsigned int n_rows;
 
-    void (*OnDoubleClickRow) (HWND, void*);
+    void (*OnDoubleClickRow) (HWND hwnd, void* self);
 } ListFileView;
 
 typedef struct

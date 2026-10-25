@@ -14,7 +14,7 @@
 #include "dpi.h"
 
 #define CLAMP(val, vmin, vmax) ( ((val) < (vmin)) ? (vmin) : (((val) > (vmax)) ? (vmax) : (val)) )
-#define ROW_GAP             0
+#define ROW_GAP             2
 #define ICON_PADDING        6
 #define TEXT_PADDING        10
 #define SCROLLBAR_WIDTH     14
@@ -33,6 +33,8 @@ static int ARROW_HEIGHT = 6;
 static int ARROW_MARGE_RIGHT = 10;
 static int COL_HEADER_HEIGHT = 34;
 
+static void SelectRowWithKey(HWND hwnd, WPARAM wParam, ListFileView* lfv);
+static void FindRowWithKey(HWND hwnd, wchar_t key, ListFileView* lfv);
 static void SelectItem(HWND hWnd, ListFileView* lfv, int y);
 static inline void DrawHeaderTitle(HDC hdc, ColumnListView* col, int nb_col, RECT bounds, int indexHover, int indexSort, BOOL isAscending);
 static inline void DrawScrollBar(HDC hdc, ListFileView* __restrict lfv, int viewHeight, int totalContentHeight);
@@ -55,6 +57,7 @@ static void CustomSort(void* tab, size_t nb, size_t sizeElem, CallbackSort funcS
 static inline int FindIndexHeaderTitle(int x, int initial, ColumnListView* col, int nCol);
 void DrawSortArrow(HDC hdc, RECT rcColumn, BOOL isAscending);
 static inline void GetIconSize(int* out);
+static inline BOOL MouseHandleColumn(HWND hwnd, ListFileView* lfv, POINT mouse);
 
 
 
@@ -131,34 +134,17 @@ void HandleListViewLButtonDoubleClick(HWND hWnd, int x, int y, ListFileView* lfv
     }
 }
 
-void HandleListViewKeyDown(HWND hwnd, wchar_t key, ListFileView* lfv) {
-    int iSelect = lfv->indexRowSelect;
-    int iLimit = lfv->n_rows;
-    
-    if (iSelect < 0 || iSelect >= iLimit)
-        return;
-    
-    size_t iNext = (iSelect + 1) % iLimit;
-    for (iNext; iNext != iSelect; iNext=(iNext + 1) % iLimit) {
-        ElementFile* file = (ElementFile*)lfv->rows + iNext;
-        wchar_t letterName = file->name[0];
+void HandleListViewKeyDown(HWND hwnd, WPARAM wParam, ListFileView* lfv) {
+    wchar_t key = GetLetterKey(wParam);
 
-        if (letterName == key || letterName - 32 == key) {
-            lfv->indexRowSelect = iNext;
-
-            const int marge_y_selection = ROW_HEIGHT * 3;
-
-            int newScrollPos = iNext * ROW_HEIGHT - marge_y_selection;
-
-            newScrollPos = CLAMP(newScrollPos, 0, lfv->maxScrollPos);
-
-            lfv->scrollPos = newScrollPos;
-            InvalidateRect(hwnd, &lfv->bounds, FALSE);
-            return;
-        }
+    if (key == 0) {
+        SelectRowWithKey(hwnd, wParam, lfv);
+    }
+    else {
+        FindRowWithKey(hwnd, key, lfv);
     }
 
-    MessageBeep(MB_ICONHAND);
+    
 }
 
 void HandleListViewLButtonDown(HWND hWnd, int x, int y, ListFileView* lfv) {
@@ -225,19 +211,8 @@ void HandleListViewMouseMove(HWND hWnd, int x, int y, ListFileView* lfv) {
         lfv->indexRowHover = newIHover;
     }
 
-    RECT headRect = lfv->headRect;
-    POINT mouse = { x, y };
-    int i_col = -1;
-    if (PtInRect(&headRect, mouse))
-    {
-        i_col = FindIndexHeaderTitle(x, headRect.left, lfv->columns, lfv->n_columns);
-    }
-
-    if (i_col != lfv->indexColHover)
-    {
-        lfv->indexColHover = i_col;
-        InvalidateRect(hWnd, &headRect, FALSE);
-    }
+    if (MouseHandleColumn(hWnd, lfv, (POINT) { x, y }))
+        return;
     
     if (!lfv->isDraggingScroll || !lfv->enableScroll) return;
 
@@ -313,6 +288,7 @@ void UpdateListFileView(HWND hwnd, ListFileView* lfv, ListFile* newlist, BOOL so
 {
     lfv->indexColHover = -1;
     lfv->indexRowHover = -1;
+    lfv->indexRowSelect = -1;
 
     RECT headRect = lfv->bounds;
     headRect.bottom = lfv->bounds.top + COL_HEADER_HEIGHT;
@@ -362,6 +338,96 @@ void FreeListFileView(ListFileView* lfv) {
 
 
 
+
+
+
+
+
+
+
+static void SelectRowWithKey(HWND hwnd, WPARAM wParam, ListFileView* lfv) {
+    switch (wParam) {
+    case VK_RETURN: {
+        lfv->OnDoubleClickRow(hwnd, lfv);
+        break;
+    }
+    case VK_BACK: {
+        ElementFile* elem = (ElementFile*)lfv->rows;
+        if (elem->flags & ElementParentDirectory) {
+            lfv->indexRowSelect = 0;
+            lfv->OnDoubleClickRow(hwnd, lfv);
+        }
+        break;
+    }
+    case VK_UP: {
+        if (lfv->indexRowSelect > 0) {
+            int nextIRowSelect = lfv->indexRowSelect - 1;
+
+            int virtualTop = nextIRowSelect * (ROW_HEIGHT + ROW_GAP);
+            BOOL isHiddenRect = virtualTop < lfv->scrollPos;
+
+            if (isHiddenRect) {
+                lfv->scrollPos = nextIRowSelect * (ROW_HEIGHT + ROW_GAP);
+                InvalidateRect(hwnd, &lfv->bounds, FALSE);
+            } else 
+                InvalidatePairItem(hwnd, lfv->itemsArea, lfv->scrollPos, lfv->indexRowSelect, nextIRowSelect);
+            
+            lfv->indexRowSelect = nextIRowSelect;
+            
+        }
+        break;
+    }
+    case VK_DOWN: {
+        if (lfv->indexRowSelect + 1 < lfv->n_rows) {
+            int nextIRowSelect = lfv->indexRowSelect + 1;
+
+            int rectTop = nextIRowSelect * (ROW_HEIGHT + ROW_GAP);
+            int rectBottom = rectTop + ROW_HEIGHT;
+            int virtualBottom = rectBottom - lfv->scrollPos;
+            BOOL isHiddenRect = virtualBottom >= RectHeight(&lfv->itemsArea);
+
+            if (isHiddenRect) {
+                lfv->scrollPos = min(rectTop, lfv->maxScrollPos);
+                InvalidateRect(hwnd, &lfv->bounds, FALSE);
+            } else 
+                InvalidatePairItem(hwnd, lfv->itemsArea, lfv->scrollPos, lfv->indexRowSelect, nextIRowSelect);
+            
+            lfv->indexRowSelect = nextIRowSelect;
+        }
+        break;
+    }
+    }
+}
+
+static void FindRowWithKey(HWND hwnd, wchar_t key, ListFileView* lfv) {
+    int iSelect = lfv->indexRowSelect;
+    int iLimit = lfv->n_rows;
+
+    if (iSelect < 0 || iSelect >= iLimit)
+        return;
+
+    size_t iNext = (iSelect + 1) % iLimit;
+    for (iNext; iNext != iSelect; iNext = (iNext + 1) % iLimit) {
+        ElementFile* file = (ElementFile*)lfv->rows + iNext;
+        wchar_t letterName = file->name[0];
+
+        if (letterName == key || letterName - 32 == key) {
+            lfv->indexRowSelect = iNext;
+
+            const int marge_y_selection = ROW_HEIGHT * 3;
+
+            int newScrollPos = iNext * ROW_HEIGHT - marge_y_selection;
+
+            newScrollPos = CLAMP(newScrollPos, 0, lfv->maxScrollPos);
+
+            lfv->scrollPos = newScrollPos;
+            InvalidateRect(hwnd, &lfv->bounds, FALSE);
+            return;
+        }
+    }
+
+    MessageBeep(MB_ICONHAND);
+}
 
 static void SelectItem(HWND hWnd, ListFileView* lfv, int y) {
     int i = GetHoverIndex(hWnd, y, lfv);
@@ -536,7 +602,27 @@ static inline void MoveHorizontalRect(RECT* r, const RECT limit, int width, int 
     r->right = min(r->right, limit.right);
 }
 
+static inline BOOL MouseHandleColumn(HWND hwnd, ListFileView* lfv, POINT mouse) {
+    RECT headRect = lfv->headRect;
+    int i_col = -1;
+    if (PtInRect(&headRect, mouse))
+    {
+        i_col = FindIndexHeaderTitle(mouse.x, headRect.left, lfv->columns, lfv->n_columns);
+    }
+
+    if (i_col != lfv->indexColHover)
+    {
+        lfv->indexColHover = i_col;
+        InvalidateRect(hwnd, &headRect, FALSE);
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
 static inline void InvalidatePairItem(HWND hwnd, RECT area, int scrollPos, int i1, int i2) {
+    
     RECT lastR = area;
     lastR.top += (i1 * (ROW_HEIGHT + ROW_GAP)) - scrollPos;
     lastR.bottom = lastR.top + ROW_HEIGHT;
@@ -544,9 +630,9 @@ static inline void InvalidatePairItem(HWND hwnd, RECT area, int scrollPos, int i
     RECT newR = area;
     newR.top += (i2 * (ROW_HEIGHT + ROW_GAP)) - scrollPos;
     newR.bottom = newR.top + ROW_HEIGHT;
-
-    InvalidateRect(hwnd, &lastR, FALSE);
+    
     InvalidateRect(hwnd, &newR, FALSE);
+    InvalidateRect(hwnd, &lastR, FALSE);
 }
 
 static inline IndexRange GetIndexRange(ListFileView* __restrict lfv, RECT rcPaint) {
