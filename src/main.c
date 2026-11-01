@@ -25,7 +25,7 @@
 #define NB_BUTTON 2
 #define NB_LIST_COLUMN 2
 #define WIN_WIDTH 400
-#define WIN_HEIGHT 500
+#define WIN_HEIGHT 600
 
 HWND mainHwnd = NULL;
 
@@ -38,7 +38,8 @@ int main()
 
     Button buttons[NB_BUTTON];
     ListFileView list = { 0 };
-    WindowDataInformation info = { buttons, &list, NB_BUTTON, WIN_WIDTH, WIN_HEIGHT };
+    ProgressBar progressBar = { 0 };
+    WindowDataInformation info = { buttons, &list, &progressBar, NB_BUTTON, WIN_WIDTH, WIN_HEIGHT };
     mainHwnd = CreateMainWindow(L"JossFileSize", &info);
 
     buttons[0] = CreateButton(L"Open foler", OpenDialogFolder);
@@ -47,6 +48,8 @@ int main()
     g_rects[RECT_LAYOUT_BUTTON_OPEN_FOLDER] = &buttons[0].bounds;
     g_rects[RECT_LAYOUT_BUTTON_SYNC_EXPLR] = &buttons[1].bounds;
     g_rects[RECT_LAYOUT_LIST_VIEW] = &list.bounds;
+    g_rects[RECT_LAYOUT_PROGRESS_BAR] = &progressBar.bounds;
+
     InitLayout(DPI_CONST(WIN_WIDTH), DPI_CONST(WIN_HEIGHT));
 
     list.OnDoubleClickRow = OnDoubleClickRow;

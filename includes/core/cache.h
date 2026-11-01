@@ -35,6 +35,6 @@ ULONGLONG SearchFolderSize(const wchar_t *dossierPath, FILETIME lastModif, ListF
 ULONGLONG GetSizeCachePath(size_t lenPath, FILETIME lastModif, ListFileView* lfv);
 
 void SaveCache(void);
-void LoadCache(void);
+unsigned int LoadCache(void);
 
 ULONGLONG fnv_1a(const wchar_t *chemin);

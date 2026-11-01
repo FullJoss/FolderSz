@@ -16,6 +16,7 @@
 #include "dpi.h"
 #include "backend.h"
 #include "layout.h"
+#include "progressBar.h"
 
 int DPI_VALUE = 96;
 
@@ -181,6 +182,8 @@ static inline int OnPaint(HWND hwnd, WindowDataInformation* window_info) {
 
     DrawListFileView(hdcMem, window_info->lfv, ps.rcPaint);
 
+    PaintProgressBar(hdcMem, window_info->progressBar);
+
     for (int i = 0; i < window_info->n_buttons; i++)
         ButtonDraw(hdcMem, window_info->buttons + i);
 
@@ -230,11 +233,17 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
     {
     case WM_CREATE:
     {
-        LoadCache();
+        float nbCache = (float)LoadCache();
+        float percentFillCache = nbCache / MAX_CACHE_ENTRIES;
+        UINT totalCacheSize = (sizeof(int) * MAX_BITMASK_ENTRIES) + sizeof(int) + (sizeof(CacheEntry) * nbCache);
 
         CREATESTRUCT *pCreate = (CREATESTRUCT *)lParam;
        
         window_info = (WindowDataInformation *)pCreate->lpCreateParams;
+        window_info->progressBar->value = percentFillCache;
+        char buffer[32];
+        StrFormatByteSizeW(totalCacheSize, buffer, ARRAYSIZE(buffer));
+        swprintf_s(window_info->progressBar->text, 32, L"Cache size %s", buffer);
 
         SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)window_info);
 

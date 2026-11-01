@@ -154,6 +154,7 @@
     <ClCompile Include="src\ui\button.c" />
     <ClCompile Include="src\ui\layout.c" />
     <ClCompile Include="src\ui\list_view.c" />
+    <ClCompile Include="src\ui\progressBar.c" />
     <ClCompile Include="src\ui\theme.c" />
   </ItemGroup>
   <ItemGroup>
@@ -172,6 +173,7 @@
     <ClInclude Include="includes\ui\button.h" />
     <ClInclude Include="includes\ui\layout.h" />
     <ClInclude Include="includes\ui\list_view.h" />
+    <ClInclude Include="includes\ui\progressBar.h" />
     <ClInclude Include="includes\ui\theme.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>

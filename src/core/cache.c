@@ -32,9 +32,10 @@ static inline CacheEntry* CompressTable();
 static inline AddJokerPathForWin32(int lenPath);
 static inline RemoveJokerPathForWin32(int lenPath);
 
-void LoadCache(void)
+unsigned int LoadCache(void)
 {
     ReadCacheBinaryFile(CACHE_FILE_NAME);
+    return g_NbCacheEntries;
 }
 
 void SaveCache(void)

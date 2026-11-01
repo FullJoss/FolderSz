@@ -99,10 +99,17 @@ typedef struct {
     void (*OnDoubleClickRow) (HWND hwnd, void* self);
 } ListFileView;
 
+typedef struct {
+    wchar_t text[32];
+    RECT bounds;
+    float value;
+} ProgressBar;
+
 typedef struct
 {
     Button* buttons;
     ListFileView* lfv;
+    ProgressBar* progressBar;
     int n_buttons;
     int width;
     int height;

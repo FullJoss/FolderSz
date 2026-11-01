@@ -30,6 +30,9 @@ int g_CurrentLineHeight = 10;
 int m_windowWidth = 0;
 int m_windowHeight = 0;
 
+#define BUTTON_HEIGHT DPI_CONST(30)
+#define PROGRESS_BAR_HEIGHT DPI_CONST(34)
+
 static void Fill(RectLayout rectTarget, int width, int height);
 static inline void EndLine();
 static void DefineBegin(int wWindow, int hWindow);
@@ -43,13 +46,17 @@ void InitLayout(int windowWidth, int windowHeight) {
     
     DefineBegin(windowWidth, windowHeight);
 
-    Define(RECT_LAYOUT_BUTTON_OPEN_FOLDER, -1, DPI_CONST(30));
-    Define(RECT_LAYOUT_BUTTON_SYNC_EXPLR, DPI_CONST(260), DPI_CONST(30));
+    Define(RECT_LAYOUT_BUTTON_OPEN_FOLDER, -1, BUTTON_HEIGHT);
+    Define(RECT_LAYOUT_BUTTON_SYNC_EXPLR, DPI_CONST(260), BUTTON_HEIGHT);
     
     NextLine();
 
-    Define(RECT_LAYOUT_LIST_VIEW, -1, windowHeight - PADDING * 2 - GAP - DPI_CONST(34));
+    Define(RECT_LAYOUT_LIST_VIEW, -1, windowHeight - (PADDING + GAP) * 2 - BUTTON_HEIGHT - PROGRESS_BAR_HEIGHT);
+    
+    NextLine();
 
+    Define(RECT_LAYOUT_PROGRESS_BAR, -1, PROGRESS_BAR_HEIGHT);
+        
     DefineComplete();
 }
 
