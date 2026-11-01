@@ -42,3 +42,4 @@ void FreeTheme();
 void SetListViewTheme(HWND);
 void SetTitleWindowTheme(HWND hWnd);
 void ResyncColorTheme();
+void RecreateFont(int dpi);

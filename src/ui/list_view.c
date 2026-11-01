@@ -273,15 +273,27 @@ void HandleListViewMouseWheel(HWND hWnd, int wheelDelta, LPARAM lParam, ListFile
 
 
 
+void UpdateListViewWidthColumn(ListFileView* lfv) {
+    for (size_t i = 0; i < lfv->n_columns; i++) {
+        lfv->columns[i].width = RectW(&lfv->bounds) * lfv->columns[i].widthPercent;
+    }
+
+    CalculateItemsArea(lfv);
+
+    if (lfv->n_rows > 0) 
+        CalculateTrackThumb(lfv);
+
+    CalculateClipRegion(lfv);
+}
 
 void UpdateDPIListView() {
     // DPI
-    ROW_HEIGHT = DPI_CONST(32);
+    ROW_HEIGHT = DPI_CONST(26);
     GetIconSize(&ICON_SIZE);
     ARROW_WIDTH = DPI_CONST(10);
     ARROW_HEIGHT = DPI_CONST(6);
     ARROW_MARGE_RIGHT = DPI_CONST(10);
-    COL_HEADER_HEIGHT = DPI_CONST(34);
+    COL_HEADER_HEIGHT = DPI_CONST(28);
 }
 
 void UpdateListFileView(HWND hwnd, ListFileView* lfv, ListFile* newlist, BOOL sort)

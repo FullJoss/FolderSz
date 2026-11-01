@@ -16,7 +16,7 @@ typedef enum {
 	RECT_LAYOUT_COUNT
 } RectLayout;
 
-extern RECT g_rects[RECT_LAYOUT_COUNT];
+extern RECT* g_rects[RECT_LAYOUT_COUNT];
 
 void InitLayout(int windowWidth, int windowHeight);
 int GetWThird(RectLayout rectTarget);

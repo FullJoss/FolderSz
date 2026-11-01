@@ -21,6 +21,7 @@ void HandleListViewKeyDown(HWND hwnd, WPARAM wParam, ListFileView* lfv);
 void UpdateListFileView(HWND hwnd, ListFileView* lfv, ListFile* newlist, BOOL sort);
 void FreeListFileView(ListFileView* lfv);
 void UpdateDPIListView();
+void UpdateListViewWidthColumn(ListFileView* lfv);
 
 static inline int RectW(const RECT* r) { return r->right - r->left; }
 static inline int RectHeight(const RECT* r) { return r->bottom - r->top; }

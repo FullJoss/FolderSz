@@ -21,7 +21,7 @@ typedef struct {
 Buffer g_buffers[RECT_LAYOUT_COUNT];
 int g_CurrentLineBuffer = 0;
 
-RECT g_rects[RECT_LAYOUT_COUNT] = { 0 };
+RECT* g_rects[RECT_LAYOUT_COUNT] = { NULL };
 
 int g_CursorX = PADDING;
 int g_CursorY = PADDING;
@@ -43,8 +43,8 @@ void InitLayout(int windowWidth, int windowHeight) {
     
     DefineBegin(windowWidth, windowHeight);
 
-    Define(RECT_LAYOUT_BUTTON_OPEN_FOLDER, -1, DPI_CONST(34));
-    Define(RECT_LAYOUT_BUTTON_SYNC_EXPLR, DPI_CONST(260), DPI_CONST(34));
+    Define(RECT_LAYOUT_BUTTON_OPEN_FOLDER, -1, DPI_CONST(30));
+    Define(RECT_LAYOUT_BUTTON_SYNC_EXPLR, DPI_CONST(260), DPI_CONST(30));
     
     NextLine();
 
@@ -54,18 +54,23 @@ void InitLayout(int windowWidth, int windowHeight) {
 }
 
 int GetWThird(RectLayout rectTarget) {
-    int list_width = g_rects[rectTarget].right - g_rects[rectTarget].left;
+    int list_width = g_rects[rectTarget]->right - g_rects[rectTarget]->left;
     return list_width / 3;
 }
 
 int GetWFillOfThird(RectLayout rectTarget) {
-    int list_width = g_rects[rectTarget].right - g_rects[rectTarget].left;
+    int list_width = g_rects[rectTarget]->right - g_rects[rectTarget]->left;
     return list_width - GetWThird(rectTarget);
 }
 
 static void DefineBegin(int wWindow, int hWindow) {
     m_windowWidth = wWindow;
     m_windowHeight = wWindow;
+
+    g_CurrentLineBuffer = 0;
+    g_CursorX = PADDING;
+    g_CursorY = PADDING;
+    g_CurrentLineHeight = PADDING;
 }
 
 static inline int CalculateElementWidth(int endIndex, int elementCount) {
@@ -141,10 +146,10 @@ static void Define(RectLayout rectTarget, int width, int height) {
 
 static void Fill(RectLayout rectTarget, int width, int height) {
     
-    g_rects[rectTarget].left = g_CursorX;
-    g_rects[rectTarget].top = g_CursorY;
-    g_rects[rectTarget].right = g_CursorX + width;
-    g_rects[rectTarget].bottom = g_CursorY + height;
+    g_rects[rectTarget]->left = g_CursorX;
+    g_rects[rectTarget]->top = g_CursorY;
+    g_rects[rectTarget]->right = g_CursorX + width;
+    g_rects[rectTarget]->bottom = g_CursorY + height;
 
     g_CursorX += GAP + width;
     g_CurrentLineHeight = max(g_CurrentLineHeight, height);

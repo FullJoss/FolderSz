@@ -41,6 +41,7 @@ typedef struct {
     RECT padding;
     const wchar_t* name;
     int width;
+    float widthPercent;
     CallbackSort FuncComparison;
 } ColumnListView;
 

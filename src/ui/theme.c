@@ -28,14 +28,14 @@ static inline void FillVarColorLight();
 static inline void FillBrushWithColor();
 static inline BOOL IsDarkMode();
 static inline void GetAccessHSystemList();
-static HFONT CreateCustomFont(const wchar_t* fontName, int size, int weight, BOOL useItalic);
+static HFONT CreateCustomFont(const wchar_t* fontName, int size, int weight, BOOL useItalic, int pdi);
 static void SyncColorTheme();
 
 void InitTheme()
 {
     GetAccessHSystemList();
 
-    g_font = CreateCustomFont(L"Segoe UI", 10, FW_MEDIUM, FALSE);
+    RecreateFont(-1);
 
     SyncColorTheme();
     FillBrushWithColor();
@@ -48,6 +48,14 @@ void FreeTheme()
     DeleteObject(g_font);
     DeleteObject(CONST_PEN_SELECTION);
     FreeBrushs();
+}
+
+void RecreateFont(int dpi) {
+
+    if (g_font)
+        DeleteObject(g_font);
+
+    g_font = CreateCustomFont(L"Segoe UI", 10, FW_MEDIUM, FALSE, dpi);
 }
 
 void ResyncColorTheme() {
@@ -73,16 +81,19 @@ void SetTitleWindowTheme(HWND hWnd) {
 
 
 
-static HFONT CreateCustomFont(const wchar_t* fontName, int size, int weight, BOOL useItalic)
+static HFONT CreateCustomFont(const wchar_t* fontName, int size, int weight, BOOL useItalic, int dpi)
 {
-    HDC hdc = GetDC(NULL);
+    int dpiY = dpi;
 
-    int dpiY = GetDeviceCaps(hdc, LOGPIXELSY);
+    if (dpi < 0) {
+        HDC hdc = GetDC(NULL);
 
-    ReleaseDC(NULL, hdc);
+        dpiY = GetDeviceCaps(hdc, LOGPIXELSY);
+
+        ReleaseDC(NULL, hdc);
+    }
 
     int fontHeight = -MulDiv(size, dpiY, 72);
-    g_fontHeight = fontHeight;
 
     return CreateFontW(
         fontHeight,

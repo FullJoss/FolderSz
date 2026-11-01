@@ -15,7 +15,9 @@
 #include "cache.h"
 #include "dpi.h"
 #include "backend.h"
-#include "theme.h"
+#include "layout.h"
+
+int DPI_VALUE = 96;
 
 static HDC hdcMem = NULL;
 static HBITMAP hBmp = NULL;
@@ -26,6 +28,7 @@ static int g_dpi = 96;
 
 LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 static inline void FreeDoubleBuffering();
+static inline void RecreateBmpDoubleBuffering(HWND hwnd, int width, int height);
 static inline void EnsureDoubleBuffering(HDC hdc, int w, int h);
 
 HWND CreateMainWindow(const wchar_t *title, WindowDataInformation *info)
@@ -153,6 +156,19 @@ static inline int OnPaint(HWND hwnd, WindowDataInformation* window_info) {
     return 0;
 }
 
+static inline void RecreateBmpDoubleBuffering(HWND hwnd, int width, int height) {
+    if (hBmp)
+    {
+        SelectObject(hdcMem, hBmpOld);
+        DeleteObject(hBmp);
+        hBmp = NULL;
+    }
+
+    HDC hdc = GetDC(hwnd);
+    EnsureDoubleBuffering(hdc, width, height);
+    ReleaseDC(hwnd, hdc);
+}
+
 static inline void EnsureDoubleBuffering(HDC hdc, int width, int height) {
     if (!hdcMem) hdcMem = CreateCompatibleDC(hdc);
     if (!hBmp) {
@@ -186,18 +202,66 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
         SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)window_info);
 
+        DPI_VALUE = GetDpiForWindowSafe(hwnd);
+        g_fontHeight = GetFontHeightDPI(hwnd, g_font);
         UpdateDPIListView();
 
         return 0;
     }
 
+    case WM_DPICHANGED:
+    {
+        int newDpiX = LOWORD(wParam);
+        int newDpiY = HIWORD(wParam);
+        LPRECT lprcNewScale = (LPRECT)lParam;
+
+        int newX = lprcNewScale->left;
+        int newY = lprcNewScale->top;
+        int newWidth = lprcNewScale->right - lprcNewScale->left;
+        int newHeight = lprcNewScale->bottom - lprcNewScale->top;
+
+        RECT clientLastRect;
+        GetClientRect(hwnd, &clientLastRect);
+
+        SetWindowPos(hwnd,
+            NULL,
+            newX,
+            newY,
+            newWidth,
+            newHeight,
+            SWP_NOZORDER | SWP_NOACTIVATE);
+
+        RECT clientRect;
+        GetClientRect(hwnd, &clientRect);
+        int clientWidth = RectW(&clientRect);
+        int clientHeight = RectHeight(&clientRect);
+        window_info->width = clientWidth;
+        window_info->height = clientHeight;
+
+        BOOL isToBigDpi = newDpiY > DPI_VALUE;
+        DPI_VALUE = newDpiY;
+
+        RecreateBmpDoubleBuffering(hwnd, clientWidth, clientHeight);
+
+        InitLayout(clientWidth, clientHeight);
+        RecreateFont(newDpiY);
+        g_fontHeight = GetFontHeightDPI(hwnd, g_font);
+
+        UpdateDPIListView();
+        UpdateListViewWidthColumn(window_info->lfv);
+
+        LPRECT lpTotal = NULL;
+        BOOL notEmpty = UnionRect(lpTotal, &clientRect, &clientLastRect);
+        if (notEmpty) InvalidateRect(hwnd, lpTotal, FALSE);
+        return 0;
+    }
+
     case WM_SETTINGCHANGE: {
-        // lParam contient le nom de la section modifiée. 
-        // Si lParam est nul ou pointe vers "ImmersiveColorSet", le thème a changé.
         if (lParam && wcscmp((const wchar_t*)lParam, L"ImmersiveColorSet") == 0) {
             ResyncColorTheme();
             SetTitleWindowTheme(hwnd);
             InvalidateRect(hwnd, NULL, TRUE);
+            return 0;
         }
         break;
     }
