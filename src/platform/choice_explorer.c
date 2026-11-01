@@ -39,6 +39,8 @@ typedef enum {
     SEARCH_RESULT_MULTIPLE
 } SearchResult;
 
+static void OnPaint(HWND hwnd);
+
 SearchResult SearchOpenExplorer(wchar_t* outPath, DWORD maxLen);
 static inline void CreateClassRegistration(const wchar_t* classname, HINSTANCE hInst);
 static inline RECT CalculateWindowRect();
@@ -50,6 +52,7 @@ static inline void CloseChoiceExplorer();
 static inline void ShowThumbnailWindow(HWND hwndPopup, ExplorerInfo* explorer, RECT rectview);
 static inline void AttachThumbnailProc(HWND thumbnail);
 static inline void FillThumbnailLabel(int index, POINT thumbnailPos, wchar_t* text);
+static inline void ClearBackground(HWND hwnd, HDC hdc);
 
 BOOL CreateChoiceExplorer(HWND hwndParent, wchar_t *outPath, DWORD maxLen)
 {
@@ -164,47 +167,7 @@ LRESULT CALLBACK AltTabChoixProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 
     case WM_PAINT:
     {
-        PAINTSTRUCT ps;
-        HDC hdc = BeginPaint(hwnd, &ps);
-
-        RECT windowRect;
-        GetClientRect(hwnd, &windowRect);
-        SetBkColor(hdc, g_colors[IC_WINDOW_COLOR]);
-        ExtTextOutW(hdc, 0, 0, ETO_OPAQUE, &windowRect, L"", 0, NULL);
-
-        SetTextColor(hdc, g_colors[IC_TEXT]);
-        SetBkMode(hdc, TRANSPARENT);
-        SelectObject(hdc, g_font);
-
-        RECT rcTitle = {20, 10, 500, 35};
-        DrawTextW(hdc, L"Select the Explorer window to synchronize :", -1, &rcTitle, DT_LEFT | DT_VCENTER);
-
-        POINT pt;
-        GetCursorPos(&pt);
-        ScreenToClient(hwnd, &pt);
-
-        for (int i = 0; i < m_explorerCount; i++)
-        {
-            RECT rc;
-            GetWindowRect(g_Explorers[i].hwndPlaceholder, &rc);
-            MapWindowPoints(HWND_DESKTOP, hwnd, (LPPOINT)&rc, 2);
-
-            if (PtInRect(&rc, pt))
-            {
-                InflateRect(&rc, 3, 3);
-                HPEN hOldPen = (HPEN)SelectObject(hdc, CONST_PEN_SELECTION);
-                HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, GetStockObject(NULL_BRUSH));
-               
-                Rectangle(hdc, rc.left, rc.top, rc.right, rc.bottom);
-
-                SelectObject(hdc, hOldPen); 
-                SelectObject(hdc, hOldBrush);
-            }
-
-            TextOutW(hdc, g_labels[i].x, g_labels[i].y, g_labels[i].text, lstrlenW(g_labels[i].text));
-        }
-
-        EndPaint(hwnd, &ps);
+        OnPaint(hwnd);
         break;
     }
 
@@ -227,6 +190,48 @@ LRESULT CALLBACK AltTabChoixProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
         return DefWindowProcW(hwnd, msg, wParam, lParam);
     }
     return 0;
+}
+
+
+static void OnPaint(HWND hwnd) {
+    PAINTSTRUCT ps;
+    HDC hdc = BeginPaint(hwnd, &ps);
+
+    ClearBackground(hwnd, hdc);
+
+    SetTextColor(hdc, g_colors[IC_TEXT]);
+    SetBkMode(hdc, TRANSPARENT);
+    SelectObject(hdc, g_font);
+
+    RECT rcTitle = { 20, 10, 500, 35 };
+    DrawTextW(hdc, L"Select the Explorer window to synchronize :", -1, &rcTitle, DT_LEFT | DT_VCENTER);
+
+    POINT pt;
+    GetCursorPos(&pt);
+    ScreenToClient(hwnd, &pt);
+
+    for (int i = 0; i < m_explorerCount; i++)
+    {
+        RECT rc;
+        GetWindowRect(g_Explorers[i].hwndPlaceholder, &rc);
+        MapWindowPoints(HWND_DESKTOP, hwnd, (LPPOINT)&rc, 2);
+
+        if (PtInRect(&rc, pt))
+        {
+            InflateRect(&rc, 3, 3);
+            HPEN hOldPen = (HPEN)SelectObject(hdc, CONST_PEN_SELECTION);
+            HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, GetStockObject(NULL_BRUSH));
+
+            Rectangle(hdc, rc.left, rc.top, rc.right, rc.bottom);
+
+            SelectObject(hdc, hOldPen);
+            SelectObject(hdc, hOldBrush);
+        }
+
+        TextOutW(hdc, g_labels[i].x, g_labels[i].y, g_labels[i].text, lstrlenW(g_labels[i].text));
+    }
+
+    EndPaint(hwnd, &ps);
 }
 
 SearchResult SearchOpenExplorer(wchar_t* outPath, DWORD maxLen)
@@ -293,18 +298,18 @@ static inline POINT CalculateThumbnailPos(int index) {
 
     int x = MARGIN + col * (THUMBNAIL_WIDTH + THUMBNAIL_GAP);
     int y = MARGIN + row * (THUMBNAIL_HEIGHT + THUMBNAIL_GAP);
-    y += THUMBNAIL_LABEL_H + LABEL_MARGIN;
+    y += (THUMBNAIL_LABEL_H + LABEL_MARGIN) * (row + 1);
 
     return (POINT) { x, y };
 }
 
 static inline RECT CalculateWindowRect() {
     int colonnes = (m_explorerCount > COLUMN_MAX) ? COLUMN_MAX : m_explorerCount;
-    int lignes = (m_explorerCount + 2) / COLUMN_MAX;
+    int lignes = (m_explorerCount + (COLUMN_MAX-1)) / COLUMN_MAX;
 
     int winW = MARGIN + colonnes * (THUMBNAIL_WIDTH + THUMBNAIL_GAP);
     int winH = MARGIN + lignes * (THUMBNAIL_HEIGHT + THUMBNAIL_GAP);
-    winH += THUMBNAIL_LABEL_H * 2 + LABEL_MARGIN;
+    winH += (THUMBNAIL_LABEL_H + LABEL_MARGIN) * (lignes + 1);
 
     int posX = (GetSystemMetrics(SM_CXSCREEN) - winW) / 2;
     int posY = (GetSystemMetrics(SM_CYSCREEN) - winH) / 2;
@@ -354,4 +359,11 @@ static inline void CopyNamePath(wchar_t* destName, wchar_t* sourcePath) {
     {
         wcsncpy_s(destName, MAX_PATH, dernierSlash + 1, _TRUNCATE);
     }
+}
+
+static inline void ClearBackground(HWND hwnd, HDC hdc) {
+    RECT windowRect;
+    GetClientRect(hwnd, &windowRect);
+    SetBkColor(hdc, g_colors[IC_WINDOW_COLOR]);
+    ExtTextOutW(hdc, 0, 0, ETO_OPAQUE, &windowRect, L"", 0, NULL);
 }
