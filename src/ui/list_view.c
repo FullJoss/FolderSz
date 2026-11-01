@@ -17,7 +17,6 @@
 #define ROW_GAP             2
 #define ICON_PADDING        6
 #define TEXT_PADDING        10
-#define SCROLLBAR_WIDTH     14
 #define MIN_THUMB_HEIGHT    20
 
 typedef struct {
@@ -32,6 +31,7 @@ static int ARROW_WIDTH = 10;
 static int ARROW_HEIGHT = 6;
 static int ARROW_MARGE_RIGHT = 10;
 static int COL_HEADER_HEIGHT = 34;
+static int SCROLLBAR_WIDTH = 14;
 
 static void SelectRowWithKey(HWND hwnd, WPARAM wParam, ListFileView* lfv);
 static void FindRowWithKey(HWND hwnd, wchar_t key, ListFileView* lfv);
@@ -56,7 +56,9 @@ static inline int GetNewScrollPos(int ymouse, ListFileView* lfv);
 static void CustomSort(void* tab, size_t nb, size_t sizeElem, CallbackSort funcSort, BOOL isAscending);
 static inline int FindIndexHeaderTitle(int x, int initial, ColumnListView* col, int nCol);
 void DrawSortArrow(HDC hdc, RECT rcColumn, BOOL isAscending);
+static void ResetValue(ListFileView* lfv);
 static inline void GetIconSize(int* out);
+static RECT GetHeadRect(RECT* bounds);
 static inline BOOL MouseHandleColumn(HWND hwnd, ListFileView* lfv, POINT mouse);
 
 
@@ -278,6 +280,8 @@ void UpdateListViewWidthColumn(ListFileView* lfv) {
         lfv->columns[i].width = RectW(&lfv->bounds) * lfv->columns[i].widthPercent;
     }
 
+    ResetValue(lfv);
+
     CalculateItemsArea(lfv);
 
     if (lfv->n_rows > 0) 
@@ -294,17 +298,12 @@ void UpdateDPIListView() {
     ARROW_HEIGHT = DPI_CONST(6);
     ARROW_MARGE_RIGHT = DPI_CONST(10);
     COL_HEADER_HEIGHT = DPI_CONST(28);
+    SCROLLBAR_WIDTH = DPI_CONST(11);
 }
 
 void UpdateListFileView(HWND hwnd, ListFileView* lfv, ListFile* newlist, BOOL sort)
 {
-    lfv->indexColHover = -1;
-    lfv->indexRowHover = -1;
-    lfv->indexRowSelect = -1;
-
-    RECT headRect = lfv->bounds;
-    headRect.bottom = lfv->bounds.top + COL_HEADER_HEIGHT;
-    lfv->headRect = headRect;
+    ResetValue(lfv);
 
     int nb_elem = newlist->count;
 
@@ -316,7 +315,6 @@ void UpdateListFileView(HWND hwnd, ListFileView* lfv, ListFile* newlist, BOOL so
 
         lfv->rows = newlist->files;
         lfv->n_rows = nb_elem;
-
 
         CalculateItemsArea(lfv);
 
@@ -702,7 +700,7 @@ static inline void CalculateTrackThumb(ListFileView* lfv) {
 
     lfv->maxThumbY = viewHeight - lfv->sbThumbHeight;
 
-    lfv->enableScroll = totalContentHeight > viewHeight;
+    lfv->enableScroll = lfv->maxScrollPos > 0;
 }
 
 
@@ -785,6 +783,18 @@ void DrawSortArrow(HDC hdc, RECT rcColumn, BOOL isAscending) {
 
     SelectObject(hdc, hOldBrush);
     SelectObject(hdc, hOldPen);
+}
+
+static void ResetValue(ListFileView* lfv) {
+    lfv->indexColHover = -1;
+    lfv->indexRowHover = -1;
+    lfv->indexRowSelect = -1;
+    lfv->scrollPos = 0;
+    lfv->headRect = GetHeadRect(&lfv->bounds);
+}
+
+static RECT GetHeadRect(RECT* bounds) {
+    return (RECT) { bounds->left, bounds->top, bounds->right, bounds->top + COL_HEADER_HEIGHT };
 }
 
 static inline void GetIconSize(int* out) {

@@ -235,24 +235,23 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         GetClientRect(hwnd, &clientRect);
         int clientWidth = RectW(&clientRect);
         int clientHeight = RectHeight(&clientRect);
-        window_info->width = clientWidth;
-        window_info->height = clientHeight;
 
         BOOL isToBigDpi = newDpiY > DPI_VALUE;
         DPI_VALUE = newDpiY;
-
-        RecreateBmpDoubleBuffering(hwnd, clientWidth, clientHeight);
-
-        InitLayout(clientWidth, clientHeight);
         RecreateFont(newDpiY);
         g_fontHeight = GetFontHeightDPI(hwnd, g_font);
+
+        window_info->width = clientWidth;
+        window_info->height = clientHeight;
+        RecreateBmpDoubleBuffering(hwnd, clientWidth, clientHeight);
+        InitLayout(clientWidth, clientHeight);
 
         UpdateDPIListView();
         UpdateListViewWidthColumn(window_info->lfv);
 
-        LPRECT lpTotal = NULL;
-        BOOL notEmpty = UnionRect(lpTotal, &clientRect, &clientLastRect);
-        if (notEmpty) InvalidateRect(hwnd, lpTotal, FALSE);
+        RECT lpTotalRect;
+        BOOL notEmpty = UnionRect(&lpTotalRect, &clientRect, &clientLastRect);
+        if (notEmpty) InvalidateRect(hwnd, &lpTotalRect, FALSE);
         return 0;
     }
 
