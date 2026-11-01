@@ -30,6 +30,7 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 static inline void FreeDoubleBuffering();
 static inline void RecreateBmpDoubleBuffering(HWND hwnd, int width, int height);
 static inline void EnsureDoubleBuffering(HDC hdc, int w, int h);
+static inline void ChangeWindowSize(HWND hwnd, WindowDataInformation* window_info, int newW, int newH);
 
 HWND CreateMainWindow(const wchar_t *title, WindowDataInformation *info)
 {
@@ -99,6 +100,41 @@ int LaunchWindow(HWND hwnd)
     }
 
     return (UINT)(msg.lParam);
+}
+
+static inline void OnDPIChanged(HWND hwnd, WPARAM wParam, LPARAM lParam, WindowDataInformation* window_info) {
+    int newDpiX = LOWORD(wParam);
+    int newDpiY = HIWORD(wParam);
+    LPRECT pRC = (LPRECT)lParam;
+
+    RECT clientLastRect;
+    GetClientRect(hwnd, &clientLastRect);
+
+    SetWindowPos(hwnd,
+        NULL,
+        pRC->left,
+        pRC->top,
+        pRC->right - pRC->left,
+        pRC->bottom - pRC->top,
+        SWP_NOZORDER | SWP_NOACTIVATE);
+
+    RECT clientRect;
+    GetClientRect(hwnd, &clientRect);
+    int clientWidth = RectW(&clientRect);
+    int clientHeight = RectHeight(&clientRect);
+
+    DPI_VALUE = newDpiY;
+    RecreateFont(newDpiY);
+    g_fontHeight = GetFontHeightDPI(hwnd, g_font);
+
+    ChangeWindowSize(hwnd, window_info, clientWidth, clientHeight);
+
+    UpdateDPIListView();
+    UpdateListViewWidthColumn(window_info->lfv);
+
+    RECT lpTotalRect;
+    BOOL notEmpty = UnionRect(&lpTotalRect, &clientRect, &clientLastRect);
+    if (notEmpty) InvalidateRect(hwnd, &lpTotalRect, FALSE);
 }
 
 static inline int OnMouseMove(HWND hwnd, WPARAM wParam, LPARAM lParam, WindowDataInformation* window_info) {
@@ -211,47 +247,7 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
     case WM_DPICHANGED:
     {
-        int newDpiX = LOWORD(wParam);
-        int newDpiY = HIWORD(wParam);
-        LPRECT lprcNewScale = (LPRECT)lParam;
-
-        int newX = lprcNewScale->left;
-        int newY = lprcNewScale->top;
-        int newWidth = lprcNewScale->right - lprcNewScale->left;
-        int newHeight = lprcNewScale->bottom - lprcNewScale->top;
-
-        RECT clientLastRect;
-        GetClientRect(hwnd, &clientLastRect);
-
-        SetWindowPos(hwnd,
-            NULL,
-            newX,
-            newY,
-            newWidth,
-            newHeight,
-            SWP_NOZORDER | SWP_NOACTIVATE);
-
-        RECT clientRect;
-        GetClientRect(hwnd, &clientRect);
-        int clientWidth = RectW(&clientRect);
-        int clientHeight = RectHeight(&clientRect);
-
-        BOOL isToBigDpi = newDpiY > DPI_VALUE;
-        DPI_VALUE = newDpiY;
-        RecreateFont(newDpiY);
-        g_fontHeight = GetFontHeightDPI(hwnd, g_font);
-
-        window_info->width = clientWidth;
-        window_info->height = clientHeight;
-        RecreateBmpDoubleBuffering(hwnd, clientWidth, clientHeight);
-        InitLayout(clientWidth, clientHeight);
-
-        UpdateDPIListView();
-        UpdateListViewWidthColumn(window_info->lfv);
-
-        RECT lpTotalRect;
-        BOOL notEmpty = UnionRect(&lpTotalRect, &clientRect, &clientLastRect);
-        if (notEmpty) InvalidateRect(hwnd, &lpTotalRect, FALSE);
+        OnDPIChanged(hwnd, wParam, lParam, window_info);
         return 0;
     }
 
@@ -348,4 +344,11 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
     }
 
     return DefWindowProcW(hwnd, uMsg, wParam, lParam);
+}
+
+static inline void ChangeWindowSize(HWND hwnd, WindowDataInformation* window_info, int newwidth, int newheight) {
+    window_info->width = newwidth;
+    window_info->height = newheight;
+    RecreateBmpDoubleBuffering(hwnd, newwidth, newheight);
+    InitLayout(newwidth, newheight);
 }
