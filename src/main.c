@@ -43,8 +43,6 @@ int main()
 
     buttons[0] = CreateButton(L"Open foler", OpenDialogFolder);
     buttons[1] = CreateButton(L"Resynchronize with Explorer", LaunchChoiceExplorer);
-  
-
 
     g_rects[RECT_LAYOUT_BUTTON_OPEN_FOLDER] = &buttons[0].bounds;
     g_rects[RECT_LAYOUT_BUTTON_SYNC_EXPLR] = &buttons[1].bounds;

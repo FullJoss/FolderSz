@@ -11,6 +11,7 @@
 #include "backend.h"
 #include "type.h"
 #include "dialog.h"
+#include "dpi.h"
 
 #pragma comment(lib, "dwmapi.lib")
 
@@ -22,16 +23,16 @@ static HWND mhwnd;
 static WNDPROC g_OldStaticProc = NULL;
 static BOOL m_thumbnail_hover = FALSE;
 
-#define ID_LISTCHOIX 205
 #define MAX_EXPLORERS 10
-#define ID_MIGNATURE_BASE 6000
-#define THUMBNAIL_WIDTH 290
-#define THUMBNAIL_HEIGHT 210
-#define MARGIN 30
-#define LABEL_MARGIN 10
-#define THUMBNAIL_GAP 30
-#define THUMBNAIL_LABEL_H 10
 #define COLUMN_MAX 3
+#define ID_MIGNATURE_BASE 6000
+
+static int THUMBNAIL_WIDTH = 290;
+static int THUMBNAIL_HEIGHT = 210;
+static int THUMBNAIL_GAP = 30;
+static int MARGIN = 30;
+static int LABEL_MARGIN = 10;
+static int THUMBNAIL_LABEL_H = 10;
 
 typedef enum {
     SEARCH_RESULT_NONE,
@@ -53,6 +54,7 @@ static inline void ShowThumbnailWindow(HWND hwndPopup, ExplorerInfo* explorer, R
 static inline void AttachThumbnailProc(HWND thumbnail);
 static inline void FillThumbnailLabel(int index, POINT thumbnailPos, wchar_t* text);
 static inline void ClearBackground(HWND hwnd, HDC hdc);
+static inline UpdateDPIConst();
 
 BOOL CreateChoiceExplorer(HWND hwndParent, wchar_t *outPath, DWORD maxLen)
 {
@@ -304,6 +306,9 @@ static inline POINT CalculateThumbnailPos(int index) {
 }
 
 static inline RECT CalculateWindowRect() {
+
+    UpdateDPIConst();
+
     int colonnes = (m_explorerCount > COLUMN_MAX) ? COLUMN_MAX : m_explorerCount;
     int lignes = (m_explorerCount + (COLUMN_MAX-1)) / COLUMN_MAX;
 
@@ -366,4 +371,13 @@ static inline void ClearBackground(HWND hwnd, HDC hdc) {
     GetClientRect(hwnd, &windowRect);
     SetBkColor(hdc, g_colors[IC_WINDOW_COLOR]);
     ExtTextOutW(hdc, 0, 0, ETO_OPAQUE, &windowRect, L"", 0, NULL);
+}
+
+static inline UpdateDPIConst() {
+    THUMBNAIL_WIDTH = DPI_CONST(260);
+    THUMBNAIL_HEIGHT = DPI_CONST(180);
+    THUMBNAIL_GAP = DPI_CONST(30);
+    MARGIN = DPI_CONST(20);
+    LABEL_MARGIN = DPI_CONST(5);
+    THUMBNAIL_LABEL_H = DPI_CONST(10);
 }

@@ -15,17 +15,17 @@ typedef struct {
     int line;
 } Buffer;
 
-#define PADDING 10
-#define GAP 10
+static int PADDING = 10;
+static int GAP = 10;
 
 Buffer g_buffers[RECT_LAYOUT_COUNT];
 int g_CurrentLineBuffer = 0;
 
 RECT* g_rects[RECT_LAYOUT_COUNT] = { NULL };
 
-int g_CursorX = PADDING;
-int g_CursorY = PADDING;
-int g_CurrentLineHeight = PADDING;
+int g_CursorX = 10;
+int g_CursorY = 10;
+int g_CurrentLineHeight = 10;
 
 int m_windowWidth = 0;
 int m_windowHeight = 0;
@@ -66,6 +66,9 @@ int GetWFillOfThird(RectLayout rectTarget) {
 static void DefineBegin(int wWindow, int hWindow) {
     m_windowWidth = wWindow;
     m_windowHeight = wWindow;
+
+    PADDING = DPI_CONST(10);
+    GAP = DPI_CONST(10);
 
     g_CurrentLineBuffer = 0;
     g_CursorX = PADDING;
