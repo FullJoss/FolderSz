@@ -455,8 +455,6 @@ static inline void DrawHeaderTitle(HDC hdc, ColumnListView* col, int nb_col, REC
 
     FillRect(hdc, &headerZone, g_brushs[IC_LV_HEAD]);
 
-    SetTextColor(hdc, g_colors[IC_TEXT]);
-
     const int padding_left = 20;
     int lastX = headerZone.left;
 
@@ -464,6 +462,7 @@ static inline void DrawHeaderTitle(HDC hdc, ColumnListView* col, int nb_col, REC
     RECT textZone = headerZone;
 
     for (int i = 0; i < nb_col; i++) {
+        SetTextColor(hdc, g_colors[IC_TEXT_MUTED]);
 
         MoveHorizontalRect(&titleZone, bounds, col[i].width, lastX);
         MoveHorizontalRect(&textZone , bounds, col[i].width, lastX + padding_left);
@@ -475,12 +474,15 @@ static inline void DrawHeaderTitle(HDC hdc, ColumnListView* col, int nb_col, REC
         FrameRect(hdc, &titleZone, g_brushs[IC_LV_BORDER]);
 
         if (i == indexSort) {
+            SetTextColor(hdc, g_colors[IC_TEXT]);
             DrawSortArrow(hdc, titleZone, isAscending);
         }
         
         DrawTextW(hdc, col[i].name, -1, &textZone, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
         lastX += col[i].width;
     }
+
+    SetTextColor(hdc, g_colors[IC_TEXT]);
 }
 
 static inline void DrawScrollBar(HDC hdc, ListFileView* __restrict lfv, int viewHeight, int totalContentHeight) {

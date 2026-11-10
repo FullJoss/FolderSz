@@ -24,8 +24,11 @@ void PaintProgressBar(HDC hdc, ProgressBar* prBr) {
 		rcPrBrBg.bottom
 	};
 
-	FillRect(hdc, &rcValue, g_brushs[IC_LV_THUMB]);
+	FillRect(hdc, &rcValue, g_brushs[IC_LV_ROW_SELECT]);
 	FrameRect(hdc, &rcPrBrBg, g_brushs[IC_LV_BORDER]);
+	FrameRect(hdc, &rcValue, g_brushs[IC_LV_THUMB_DRAG]);
+
+	SetTextColor(hdc, g_colors[IC_TEXT_MUTED]);
 
 	ExtTextOutW(hdc,
 		prBr->bounds.left,
@@ -35,4 +38,6 @@ void PaintProgressBar(HDC hdc, ProgressBar* prBr) {
 		prBr->text,
 		(UINT)wcslen(prBr->text),
 		NULL);
+
+	SetTextColor(hdc, g_colors[IC_TEXT]);
 }

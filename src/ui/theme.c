@@ -178,8 +178,8 @@ static inline void FillVarColorDark() {
     g_colors[IC_LV_HEAD_HOVER] = RGB(40, 40, 40); 
 
 
-
     g_colors[IC_TEXT] = RGB(230, 230, 240);
+    g_colors[IC_TEXT_MUTED] = RGB(160, 160, 160);
 }
 
 static inline void FillVarColorLight() {
@@ -203,6 +203,7 @@ static inline void FillVarColorLight() {
     g_colors[IC_LV_HEAD_HOVER] = RGB(235, 235, 240);
 
     g_colors[IC_TEXT] = RGB(0, 0, 0);
+    g_colors[IC_TEXT_MUTED] = RGB(88, 97, 102);
 }
 
 static inline void FillBrushWithColor() {

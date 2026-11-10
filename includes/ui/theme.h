@@ -27,6 +27,7 @@ typedef enum {
     IC_LV_HEAD,
     IC_LV_HEAD_HOVER,
     IC_TEXT,
+    IC_TEXT_MUTED,
     IC_COUNT
 } ColorIndex;
 
