@@ -11,16 +11,20 @@
 
 #define MAX_LISTVIEW_ELEMENT 5
 
+typedef struct {
+    wchar_t* path;
+    ListFile* lf;
+} ScanArg;
+
 extern wchar_t *current_path;
 
 wchar_t *LoadFolderDialog();
 
-ListFile* ScanFilePath(const wchar_t *dossierPath, ListFileView* lfv);
+unsigned __stdcall AsyncScanFolders(void* arg);
+
+ListFile* ScanFilePath(const wchar_t *dossierPath);
 
 void OnDoubleClickRow(HWND hwnd, ListFileView* lfv);
-
-// Call at cache.c
-void RefreshView(ListFileView* lfv);
 
 static inline void AddFlagsElement(ElementFile *element, ElementFlags flag)
 {

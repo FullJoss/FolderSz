@@ -84,7 +84,7 @@ static inline void ExploreOrExecute(HWND hwnd, ElementFile* elem, wchar_t* buffe
 }
 
 static inline void ExploreDir(HWND hwnd, wchar_t* path, ListFileView* lfv) {
-    ListFile* lf = ScanFilePath(path, lfv);
+    ListFile* lf = ScanFilePath(path);
     UpdateListFileView(hwnd, lfv, lf, TRUE);
 }
 

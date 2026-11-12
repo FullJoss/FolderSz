@@ -14,17 +14,15 @@
 #include "backend.h"
 #include "tick.h"
 
-static ListFile listFile = { NULL, 0, 0 };
 wchar_t *current_path = NULL;
 
-#define REFRESH_TIME_SECOND 0.5
-static double m_scan_time = 0;
+static ListFile listFile = { NULL, 0, 0 };
 
-static inline void PushData(wchar_t* pathElement, ElementFile* element, WIN32_FIND_DATAW* data, ListFileView* lfv);
+static inline void PushData(wchar_t* pathElement, ElementFile* element, WIN32_FIND_DATAW* data);
 static inline void AttachIcon(ElementFile* element, wchar_t* path, SHFILEINFOW* sfiFile, WIN32_FIND_DATAW* data);
 static BOOL FilterSpecificPath(const wchar_t* path);
 static inline void IdentifyFile(ElementFile* element, WIN32_FIND_DATAW* data);
-static inline void IdentifyFolder(wchar_t* pathElement, ElementFile* element, WIN32_FIND_DATAW* data, ListFileView* lfv);
+static inline void IdentifyFolder(ElementFile* element, WIN32_FIND_DATAW* data);
 static inline void IdentifyFileSystem(ElementFile* element, WIN32_FIND_DATAW* data);
 static inline HCURSOR ChangeCursor();
 static inline void RestorCursor(HCURSOR hOldCursor);
@@ -90,15 +88,28 @@ static BOOL ManageMaxCapacity()
 
 
 
+unsigned __stdcall AsyncScanFolders(void* arg) {
+    ScanArg* param = (ScanArg*)arg;
+    ListFile* lf = param->lf;
 
+    wchar_t completePath[MAX_PATH];
+    for (size_t i = 0; i < lf->count; i++) {
+        ElementFile* element = lf->files + i;
+        if (element->flags & ElementDirectory == ElementDirectory) {
+            PathCombineW(completePath, param->path, element->name);
+            element->size = SearchFolderSize(completePath, element->lastUpdate);
+        }
+    }
 
-ListFile* ScanFilePath(const wchar_t *dossierPath, ListFileView* lfv)
+    _endthreadex(0);
+    return 0;
+}
+
+ListFile* ScanFilePath(const wchar_t *dossierPath)
 {
     HCURSOR hOldCursor = ChangeCursor();
 
     listFile.count = 0;
-
-    SetWindowTextW(mainHwnd, dossierPath);
 
     wchar_t masque[MAX_PATH];
     swprintf_s(masque, MAX_PATH, L"%s\\*", dossierPath);
@@ -131,17 +142,17 @@ ListFile* ScanFilePath(const wchar_t *dossierPath, ListFileView* lfv)
 
             wcscpy_s(element->name, MAX_PATH, findData.cFileName);
 
-            wchar_t cheminComplet[MAX_PATH];
-            PathCombineW(cheminComplet, dossierPath, findData.cFileName);
+            wchar_t completePath[MAX_PATH];
+            PathCombineW(completePath, dossierPath, findData.cFileName);
 
             if (wcscmp(findData.cFileName, L"..") == 0) {
                 element->flags = ElementParentDirectory | ElementDirectory;
                 element->size = 0;
             }
             else 
-                PushData(cheminComplet, element, &findData, lfv);
+                PushData(completePath, element, &findData);
 
-            AttachIcon(element, cheminComplet, &sfiFile, &findData);
+            AttachIcon(element, completePath, &sfiFile, &findData);
 
         } while (FindNextFileW(hFind, &findData));
         FindClose(hFind);
@@ -152,15 +163,6 @@ ListFile* ScanFilePath(const wchar_t *dossierPath, ListFileView* lfv)
     return &listFile;
 }
 
-void RefreshView(ListFileView* lfv) {
-    double deltaTime = GetElapsedTime();
-    m_scan_time += deltaTime;
-
-    if (m_scan_time >= REFRESH_TIME_SECOND) {
-        UpdateListFileView(mainHwnd, lfv, &listFile, FALSE);
-        m_scan_time -= REFRESH_TIME_SECOND;
-    }
-}
 
 
 
@@ -168,8 +170,7 @@ void RefreshView(ListFileView* lfv) {
 
 
 
-
-static inline void PushData(wchar_t *pathElement, ElementFile* element, WIN32_FIND_DATAW *data, ListFileView* lfv) {
+static inline void PushData(wchar_t *pathElement, ElementFile* element, WIN32_FIND_DATAW *data) {
 
     DWORD isHiddenSystem = FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM;
 
@@ -179,7 +180,7 @@ static inline void PushData(wchar_t *pathElement, ElementFile* element, WIN32_FI
     }
     else if (data->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
     {
-        IdentifyFolder(pathElement, element, data, lfv);
+        IdentifyFolder(element, data);
     }
     else
     {
@@ -225,14 +226,12 @@ static inline void IdentifyFileSystem(ElementFile* element, WIN32_FIND_DATAW* da
     if (data->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
         AddFlagsElement(element, ElementDirectory);
     else RemoveFlagsElement(element, ElementDirectory);
-
-    element->size = 0;
 }
 
-static inline void IdentifyFolder(wchar_t* pathElement, ElementFile* element, WIN32_FIND_DATAW* data, ListFileView* lfv) {
+static inline void IdentifyFolder(ElementFile* element, WIN32_FIND_DATAW* data) {
     RemoveFlagsElement(element, ElementSystem);
     AddFlagsElement(element, ElementDirectory);
-    element->size = SearchFolderSize(pathElement, data->ftLastWriteTime, lfv);
+    element->lastUpdate = data->ftLastWriteTime;
 }
 
 static inline void IdentifyFile(ElementFile* element, WIN32_FIND_DATAW* data) {

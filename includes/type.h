@@ -59,6 +59,7 @@ typedef struct
 {
     wchar_t name[MAX_PATH];
     ULONGLONG size;
+    FILETIME lastUpdate;
     ElementFlags flags;
     int indexIcon;
 } ElementFile;

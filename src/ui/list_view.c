@@ -305,13 +305,12 @@ void UpdateListFileView(HWND hwnd, ListFileView* lfv, ListFile* newlist, BOOL so
 {
     ResetValue(lfv);
 
-    int nb_elem = newlist->count;
+    unsigned nb_elem = newlist->count;
 
-    if (nb_elem == 0) {
-        lfv->rows = newlist->files;
-        lfv->n_rows = nb_elem;
+    if (nb_elem <= 0) {
+        lfv->n_rows = 0;
     }
-    else if (newlist && nb_elem > 0) {
+    else if (newlist) {
 
         lfv->rows = newlist->files;
         lfv->n_rows = nb_elem;
@@ -329,7 +328,6 @@ void UpdateListFileView(HWND hwnd, ListFileView* lfv, ListFile* newlist, BOOL so
     }
 
     InvalidateRect(hwnd, &lfv->bounds, FALSE);
-    UpdateWindow(hwnd);
 }
 
 void FreeListFileView(ListFileView* lfv) {

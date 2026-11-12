@@ -31,8 +31,8 @@ void UpdateCacheElement(ULONGLONG hash, ULONGLONG size, FILETIME time);
 
 CacheStatus FindSizeCachePath(ULONGLONG hash, FILETIME dateActuelle, ULONGLONG *outTaille);
 
-ULONGLONG SearchFolderSize(const wchar_t *dossierPath, FILETIME lastModif, ListFileView* lfv);
-ULONGLONG GetSizeCachePath(size_t lenPath, FILETIME lastModif, ListFileView* lfv);
+ULONGLONG SearchFolderSize(const wchar_t *dossierPath, FILETIME lastModif);
+ULONGLONG GetSizeCachePath(size_t lenPath, FILETIME lastModif);
 
 void SaveCache(void);
 unsigned int LoadCache(void);

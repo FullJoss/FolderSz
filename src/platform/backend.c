@@ -107,18 +107,19 @@ int Backend_GetOpenExplorers(ExplorerInfo* outList, int maxCapacity) {
 }
 
 wchar_t* Backend_ExctractFilePath(IShellItem* pItem) {
+    static wchar_t s_folderPath[MAX_PATH];
+
     PWSTR pszFolderPath = NULL;
-    wchar_t* value = NULL;
 
     HRESULT hr = pItem->lpVtbl->GetDisplayName(pItem, SIGDN_FILESYSPATH, &pszFolderPath);
     if (SUCCEEDED(hr))
     {
-        value = _wcsdup(pszFolderPath);
+        wcscpy_s(s_folderPath, MAX_PATH, pszFolderPath);
         CoTaskMemFree(pszFolderPath);
     }
     pItem->lpVtbl->Release(pItem);
 
-    return value;
+    return s_folderPath;
 }
 
 IShellItem* Backend_DeployDialogSelector(IFileOpenDialog* pDlg) {

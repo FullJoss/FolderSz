@@ -14,27 +14,49 @@
 
 static wchar_t m_current_path[MAX_PATH] = { 0 };
 BOOL g_TriCroissant = FALSE;
+volatile BOOL thrd_scanner_isRun = FALSE;
 
 void OpenDialogFolder(HWND hwnd, WindowDataInformation* pData)
 {
-    ListFileView* lfv = pData->lfv;
-
-    wchar_t *chaine = LoadFolderDialog();
-
+    static ScanArg scanData;
+    
+    wchar_t* chaine = LoadFolderDialog();
     if (chaine == NULL) return;
 
-    ListFile* list = ScanFilePath(chaine, lfv);
-    UpdateListFileView(hwnd, lfv, list, TRUE);
+    SetWindowTextW(hwnd, chaine);
 
-    free(chaine);
+    ListFile* lf = ScanFilePath(chaine);
+    UpdateListFileView(hwnd, pData->lfv, lf, TRUE);
+
+    scanData.lf = lf;
+    scanData.path = chaine;
+
+    thrd_scanner_isRun = TRUE;
+    unsigned threadId;
+    HANDLE hThread = (HANDLE)_beginthreadex(
+        NULL,        
+        0,              
+        &AsyncScanFolders,    
+        &scanData,   
+        0,              
+        &threadId     
+    );
+
+    if (hThread != NULL)
+    {
+        CloseHandle(hThread);
+    }
+    else {
+        thrd_scanner_isRun = FALSE;
+    }
 }
 
 void LaunchChoiceExplorer(HWND hwnd, WindowDataInformation* pData) {
     ListFileView* lfv = pData->lfv;
 
-    if (CreateChoiceExplorer(mainHwnd, m_current_path, MAX_PATH))
+    if (CreateChoiceExplorer(hwnd, m_current_path, MAX_PATH))
     {
-        ListFile* list = ScanFilePath(m_current_path, lfv);
+        ListFile* list = ScanFilePath(m_current_path);
         UpdateListFileView(hwnd, lfv, list, TRUE);
     }
     else

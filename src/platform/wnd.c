@@ -242,7 +242,7 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         window_info = (WindowDataInformation *)pCreate->lpCreateParams;
         window_info->progressBar->value = percentFillCache;
         char buffer[32];
-        StrFormatByteSizeW(totalCacheSize, buffer, ARRAYSIZE(buffer));
+        StrFormatByteSizeW(totalCacheSize, buffer, 32);
         swprintf_s(window_info->progressBar->text, 32, L"Cache size %s", buffer);
 
         SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)window_info);

@@ -6,6 +6,7 @@
  */
 
 
+#include "tick.h"
 #include "cache.h"
 #include <stdio.h>
 #include "dialog.h"
@@ -13,9 +14,12 @@
 #include <string.h>
 
 #define CACHE_FILE_NAME L"FolderSz.cache"
+#define REFRESH_TIME_SECOND 0.5
 
 #define SET_USE(mask, idx)   ((mask)[(idx) >> 5] |= (1 << ((idx) & 31)))
 #define GET_USE(mask, idx)   ((mask)[(idx) >> 5] & (1 << ((idx) & 31)))
+
+static double m_scan_time = 0;
 
 static unsigned int g_NbCacheEntries = 0;
 
@@ -29,8 +33,9 @@ static unsigned int iteration_tracker = 0;
 static inline void ReadCacheBinaryFile(wchar_t* filename);
 static inline void DecompressTable(CacheEntry* buffer);
 static inline CacheEntry* CompressTable();
-static inline AddJokerPathForWin32(int lenPath);
-static inline RemoveJokerPathForWin32(int lenPath);
+static inline AddJokerPathForWin32(size_t lenPath);
+static inline RemoveJokerPathForWin32(size_t lenPath);
+static inline void RefreshView(HWND hwnd);
 
 unsigned int LoadCache(void)
 {
@@ -84,14 +89,14 @@ CacheStatus FindSizeCachePath(ULONGLONG hash, FILETIME dateActuelle, ULONGLONG *
     return res;
 }
 
-ULONGLONG SearchFolderSize(const wchar_t *dossierPath, FILETIME lastModif, ListFileView* lfv)
+ULONGLONG SearchFolderSize(const wchar_t *dossierPath, FILETIME lastModif)
 {
     size_t length = wcslen(dossierPath);
     swprintf_s(g_PathBuffer, length + 1, L"%s", dossierPath);
-    return GetSizeCachePath(length, lastModif, lfv);
+    return GetSizeCachePath(length, lastModif);
 }
 
-ULONGLONG GetSizeCachePath(size_t lenPath, FILETIME lastModif, ListFileView* lfv)
+ULONGLONG GetSizeCachePath(size_t lenPath, FILETIME lastModif)
 {
     ULONGLONG tailleTotale = 0;
 
@@ -138,7 +143,7 @@ ULONGLONG GetSizeCachePath(size_t lenPath, FILETIME lastModif, ListFileView* lfv
             {
                 if (pFindData->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
                 {
-                    ULONGLONG tailleSousDossier = GetSizeCachePath(lenPath + ecrit, pFindData->ftLastWriteTime, lfv);
+                    ULONGLONG tailleSousDossier = GetSizeCachePath(lenPath + ecrit, pFindData->ftLastWriteTime);
                     tailleTotale += tailleSousDossier;
                 }
                 else
@@ -150,7 +155,7 @@ ULONGLONG GetSizeCachePath(size_t lenPath, FILETIME lastModif, ListFileView* lfv
                 g_PathBuffer[ancienneLongueur] = L'\0';
             }
 
-            RefreshView(lfv);
+            RefreshView(mainHwnd);
         } while (FindNextFileW(hFind, pFindData));
 
         FindClose(hFind);
@@ -281,12 +286,23 @@ static inline CacheEntry* CompressTable() {
     return bufferRAM;
 }
 
-static inline AddJokerPathForWin32(int lenPath) {
+static inline AddJokerPathForWin32(size_t lenPath) {
     g_PathBuffer[lenPath] = L'\\';
     g_PathBuffer[lenPath + 1] = L'*';
     g_PathBuffer[lenPath + 2] = L'\0';
 }
 
-static inline RemoveJokerPathForWin32(int lenPath) {
+static inline RemoveJokerPathForWin32(size_t lenPath) {
     g_PathBuffer[lenPath] = L'\0';
+}
+
+static inline void RefreshView(HWND hwnd) {
+    double deltaTime = GetElapsedTime();
+    m_scan_time += deltaTime;
+
+    if (m_scan_time >= REFRESH_TIME_SECOND) {
+        m_scan_time -= REFRESH_TIME_SECOND;
+
+        InvalidateRect(hwnd, NULL, FALSE);
+    }
 }

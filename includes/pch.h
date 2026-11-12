@@ -21,7 +21,7 @@
 #include <shobjidl.h>
 #include <uxtheme.h>
 #include <vsstyle.h>
-#include <windowsx.h>
+#include <process.h> 
 #include <wchar.h>
 #include <commctrl.h>
 #include <shlwapi.h> // <-- Indispensable pour StrFormatByteSizeW
