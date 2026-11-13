@@ -1,3 +1,4 @@
+#include "event.h"
 #include "navigation.h"
 #include "feature.h"
 #include "list_view.h"
@@ -18,9 +19,8 @@ void OnDoubleClickRow(HWND hwnd, ListFileView* lfv) {
         return;
     }
 
-    wchar_t buffer[MAX_PATH];
-
-    wchar_t bufferCurrentPath[MAX_PATH];
+    static wchar_t buffer[MAX_PATH];
+    static wchar_t bufferCurrentPath[MAX_PATH];
     GetWindowTextW(hwnd, bufferCurrentPath, MAX_PATH);
 
     if (elem->flags & ElementParentDirectory) {
@@ -84,8 +84,7 @@ static inline void ExploreOrExecute(HWND hwnd, ElementFile* elem, wchar_t* buffe
 }
 
 static inline void ExploreDir(HWND hwnd, wchar_t* path, ListFileView* lfv) {
-    ListFile* lf = ScanFilePath(path);
-    UpdateListFileView(hwnd, lfv, lf, TRUE);
+    StartScanFolder(hwnd, path, lfv);
 }
 
 static inline void CutPath(wchar_t* path, size_t index) {

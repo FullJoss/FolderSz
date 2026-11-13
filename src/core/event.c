@@ -15,49 +15,22 @@
 static wchar_t m_current_path[MAX_PATH] = { 0 };
 BOOL g_TriCroissant = FALSE;
 volatile BOOL thrd_scanner_isRun = FALSE;
+static HANDLE thrd_scanner_h = NULL;
+
+static void LaunchThreadScanner(ListFile* lf, wchar_t* path);
 
 void OpenDialogFolder(HWND hwnd, WindowDataInformation* pData)
 {
-    static ScanArg scanData;
-    
     wchar_t* chaine = LoadFolderDialog();
     if (chaine == NULL) return;
 
-    SetWindowTextW(hwnd, chaine);
-
-    ListFile* lf = ScanFilePath(chaine);
-    UpdateListFileView(hwnd, pData->lfv, lf, TRUE);
-
-    scanData.lf = lf;
-    scanData.path = chaine;
-
-    thrd_scanner_isRun = TRUE;
-    unsigned threadId;
-    HANDLE hThread = (HANDLE)_beginthreadex(
-        NULL,        
-        0,              
-        &AsyncScanFolders,    
-        &scanData,   
-        0,              
-        &threadId     
-    );
-
-    if (hThread != NULL)
-    {
-        CloseHandle(hThread);
-    }
-    else {
-        thrd_scanner_isRun = FALSE;
-    }
+    StartScanFolder(hwnd, chaine, pData->lfv);
 }
 
 void LaunchChoiceExplorer(HWND hwnd, WindowDataInformation* pData) {
-    ListFileView* lfv = pData->lfv;
-
     if (CreateChoiceExplorer(hwnd, m_current_path, MAX_PATH))
     {
-        ListFile* list = ScanFilePath(m_current_path);
-        UpdateListFileView(hwnd, lfv, list, TRUE);
+        StartScanFolder(hwnd, m_current_path, pData->lfv);
     }
     else
         MessageBox_View(L"No Windows Explorer windows are open.");
@@ -98,4 +71,44 @@ int CompareBySize(const void* a, const void* b, BOOL isAscending)
     BOOL BBetter = (elemA->size) < (elemB->size);
     diff = ABetter - BBetter;
     return isAscending ? diff : -diff;
+}
+
+
+void StartScanFolder(HWND hwnd, wchar_t* path, ListFileView* lfv) {
+    if (thrd_scanner_isRun) {
+        MessageBox_View(L"Please, wait for the last operation to complete");
+        return;
+    }
+
+    SetWindowTextW(hwnd, path);
+    ListFile* lf = ScanFilePath(path);
+    UpdateListFileView(hwnd, lfv, lf, TRUE);
+
+    LaunchThreadScanner(lf, path);
+}
+
+static void LaunchThreadScanner(ListFile* lf, wchar_t* path) {
+    static ScanArg scanData;
+    scanData.lf = lf;
+    scanData.path = path;
+    scanData.pthrd_isRun = &thrd_scanner_isRun;
+
+    thrd_scanner_isRun = TRUE;
+    unsigned threadId;
+    thrd_scanner_h = (HANDLE)_beginthreadex(
+        NULL,
+        0,
+        &AsyncScanFolders,
+        &scanData,
+        0,
+        &threadId
+    );
+
+    if (thrd_scanner_h != NULL)
+    {
+        CloseHandle(thrd_scanner_h);
+    }
+    else {
+        thrd_scanner_isRun = FALSE;
+    }
 }

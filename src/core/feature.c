@@ -91,16 +91,19 @@ static BOOL ManageMaxCapacity()
 unsigned __stdcall AsyncScanFolders(void* arg) {
     ScanArg* param = (ScanArg*)arg;
     ListFile* lf = param->lf;
+    wchar_t* path = param->path;
 
     wchar_t completePath[MAX_PATH];
     for (size_t i = 0; i < lf->count; i++) {
         ElementFile* element = lf->files + i;
-        if (element->flags & ElementDirectory == ElementDirectory) {
-            PathCombineW(completePath, param->path, element->name);
+        if (element->flags & ElementDirWithoutSize) {
+            PathCombineW(completePath, path, element->name);
             element->size = SearchFolderSize(completePath, element->lastUpdate);
+            RemoveFlagsElement(element, ElementDirWithoutSize);
         }
     }
 
+    (*param->pthrd_isRun) = FALSE;
     _endthreadex(0);
     return 0;
 }
@@ -139,6 +142,7 @@ ListFile* ScanFilePath(const wchar_t *dossierPath)
             ElementFile* element = &listFile.files[listFile.count - 1];
             
             element->flags = ElementInvalid;
+            element->size = 0;
 
             wcscpy_s(element->name, MAX_PATH, findData.cFileName);
 
@@ -147,10 +151,11 @@ ListFile* ScanFilePath(const wchar_t *dossierPath)
 
             if (wcscmp(findData.cFileName, L"..") == 0) {
                 element->flags = ElementParentDirectory | ElementDirectory;
-                element->size = 0;
             }
-            else 
+            else
+            {
                 PushData(completePath, element, &findData);
+            }
 
             AttachIcon(element, completePath, &sfiFile, &findData);
 
@@ -225,18 +230,15 @@ static inline void IdentifyFileSystem(ElementFile* element, WIN32_FIND_DATAW* da
 
     if (data->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
         AddFlagsElement(element, ElementDirectory);
-    else RemoveFlagsElement(element, ElementDirectory);
 }
 
 static inline void IdentifyFolder(ElementFile* element, WIN32_FIND_DATAW* data) {
-    RemoveFlagsElement(element, ElementSystem);
     AddFlagsElement(element, ElementDirectory);
+    AddFlagsElement(element, ElementDirWithoutSize);
     element->lastUpdate = data->ftLastWriteTime;
 }
 
 static inline void IdentifyFile(ElementFile* element, WIN32_FIND_DATAW* data) {
-    RemoveFlagsElement(element, ElementSystem);
-    RemoveFlagsElement(element, ElementDirectory);
     element->size = ((ULONGLONG)data->nFileSizeHigh << 32) | data->nFileSizeLow;
 }
 

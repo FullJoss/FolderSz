@@ -503,6 +503,8 @@ static inline const wchar_t* GetRowTextElementFile(ElementFile* file, int i_col)
             return L"System File";
         if (file->flags & ElementParentDirectory)
             return L"-";
+        if (file->flags & ElementDirWithoutSize)
+            return L"pending...";
         StrFormatByteSizeW(file->size, sizeBuffer, ARRAYSIZE(sizeBuffer));
         return sizeBuffer;
     default:
@@ -525,6 +527,14 @@ static inline void DrawItem(HDC hdc, void* __restrict row, RECT rowBounds, RECT 
         if (i == 0) width -= paddingLeft + ICON_SIZE;
 
         textBounds = GetNextTextBounds(x, width, rowBounds, itemsArea);
+        
+        if (file->flags & ElementDirWithoutSize) {
+            SetTextColor(hdc, g_colors[IC_TEXT_MUTED]);
+        }
+        else {
+            SetTextColor(hdc, g_colors[IC_TEXT]);
+        }
+        
         DrawColumnText(hdc, GetRowTextElementFile(file, i), textBounds);
 
         x += width + gap;
@@ -547,7 +557,6 @@ static inline void DrawColumnImageList(HDC hdc, int indexIcon, int paddingLeft, 
 }
 
 static inline void DrawColumnText(HDC hdc, const wchar_t* __restrict text, RECT textBounds) {
-    SetTextColor(hdc, g_colors[IC_TEXT]);
     int decalage = (RectHeight(&textBounds) - g_fontHeight) / 2;
     ExtTextOutW(hdc, textBounds.left, textBounds.top + decalage,
         ETO_CLIPPED,

@@ -14,6 +14,7 @@
 typedef struct {
     wchar_t* path;
     ListFile* lf;
+    BOOL* pthrd_isRun;
 } ScanArg;
 
 extern wchar_t *current_path;

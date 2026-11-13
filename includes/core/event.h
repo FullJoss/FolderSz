@@ -15,6 +15,7 @@ extern volatile BOOL thrd_scanner_isRun;
 
 void LaunchChoiceExplorer(HWND, WindowDataInformation*);
 void OpenDialogFolder(HWND, WindowDataInformation*);
+void StartScanFolder(HWND hwnd, wchar_t* path, ListFileView* lfv);
 
 int CompareByName(const void* a, const void* b, BOOL isAscending);
 int CompareBySize(const void* a, const void* b, BOOL isAscending);
