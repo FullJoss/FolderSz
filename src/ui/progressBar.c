@@ -16,7 +16,7 @@ void PaintProgressBar(HDC hdc, ProgressBar* prBr) {
 	FillRect(hdc, &rcPrBrBg, g_brushs[IC_LV_TRACK]);
 
 	int widthPrBr = rcPrBrBg.right - rcPrBrBg.left;
-	int widthValue = (float)(widthPrBr) * prBr->value;
+	int widthValue = (int)(widthPrBr * prBr->value);
 	RECT rcValue = {
 		rcPrBrBg.left,
 		rcPrBrBg.top,

@@ -233,9 +233,14 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
     {
     case WM_CREATE:
     {
-        float nbCache = (float)LoadCache();
-        float percentFillCache = nbCache / MAX_CACHE_ENTRIES;
-        UINT totalCacheSize = (sizeof(int) * MAX_BITMASK_ENTRIES) + sizeof(int) + (sizeof(CacheEntry) * nbCache);
+        unsigned nbCache = LoadCache();
+        float percentFillCache = (float)nbCache / MAX_CACHE_ENTRIES;
+
+        unsigned blocSizeFirst = sizeof(int) * MAX_BITMASK_ENTRIES;
+        unsigned blocSizeSecond = sizeof(int);
+        unsigned blocSizeThirst = sizeof(CacheEntry) * nbCache;
+
+        UINT totalCacheSize = blocSizeFirst + blocSizeSecond + blocSizeThirst;
 
         CREATESTRUCT *pCreate = (CREATESTRUCT *)lParam;
        

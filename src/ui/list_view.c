@@ -277,7 +277,7 @@ void HandleListViewMouseWheel(HWND hWnd, int wheelDelta, LPARAM lParam, ListFile
 
 void UpdateListViewWidthColumn(ListFileView* lfv) {
     for (size_t i = 0; i < lfv->n_columns; i++) {
-        lfv->columns[i].width = RectW(&lfv->bounds) * lfv->columns[i].widthPercent;
+        lfv->columns[i].width = (int)(RectW(&lfv->bounds) * lfv->columns[i].widthPercent);
     }
 
     ResetValue(lfv);
@@ -386,7 +386,7 @@ static void SelectRowWithKey(HWND hwnd, WPARAM wParam, ListFileView* lfv) {
         break;
     }
     case VK_DOWN: {
-        if (lfv->indexRowSelect + 1 < lfv->n_rows) {
+        if (lfv->indexRowSelect + 1U < lfv->n_rows) {
             int nextIRowSelect = lfv->indexRowSelect + 1;
 
             int rectTop = nextIRowSelect * (ROW_HEIGHT + ROW_GAP);
@@ -414,7 +414,7 @@ static void FindRowWithKey(HWND hwnd, wchar_t key, ListFileView* lfv) {
     if (iSelect < 0 || iSelect >= iLimit)
         return;
 
-    size_t iNext = (iSelect + 1) % iLimit;
+    int iNext = (iSelect + 1) % iLimit;
     for (iNext; iNext != iSelect; iNext = (iNext + 1) % iLimit) {
         ElementFile* file = (ElementFile*)lfv->rows + iNext;
         wchar_t letterName = file->name[0];
@@ -422,7 +422,7 @@ static void FindRowWithKey(HWND hwnd, wchar_t key, ListFileView* lfv) {
         if (letterName == key || letterName - 32 == key) {
             lfv->indexRowSelect = iNext;
 
-            const size_t marge_y_selection = ROW_HEIGHT * 3;
+            const int marge_y_selection = ROW_HEIGHT * 3;
 
             int newScrollPos = iNext * ROW_HEIGHT - marge_y_selection;
 
@@ -441,7 +441,7 @@ static void SelectItem(HWND hWnd, ListFileView* lfv, int y) {
     int i = GetHoverIndex(hWnd, y, lfv);
 
     lfv->indexRowSelect = i;
-    InvalidateRect(hWnd, &lfv->itemsArea, NULL);
+    InvalidateRect(hWnd, &lfv->itemsArea, FALSE);
 }
 
 static inline void DrawHeaderTitle(HDC hdc, ColumnListView* col, int nb_col, RECT bounds, int indexHover, int indexSort, BOOL isAscending) {
@@ -562,7 +562,7 @@ static inline void DrawColumnText(HDC hdc, const wchar_t* __restrict text, RECT 
         ETO_CLIPPED,
         &textBounds,
         text,
-        wcslen(text),
+        (int)wcslen(text),
         NULL);
 }
 
