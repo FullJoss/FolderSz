@@ -14,14 +14,13 @@
 typedef struct {
     wchar_t* path;
     ListFile* lf;
-    volatile BOOL* pthrd_isRun;
 } ScanArg;
 
 extern wchar_t *current_path;
 
 wchar_t *LoadFolderDialog();
 
-unsigned __stdcall AsyncScanFolders(void* arg);
+void AsyncScanFolders(void* arg);
 
 ListFile* ScanFilePath(const wchar_t *dossierPath);
 

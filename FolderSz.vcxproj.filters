@@ -81,6 +81,12 @@
     <ClCompile Include="src\core\navigation.c">
       <Filter>Source Files\core</Filter>
     </ClCompile>
+    <ClCompile Include="src\ui\progressBar.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\threadManager.c">
+      <Filter>Source Files\core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
@@ -132,6 +138,12 @@
       <Filter>Header Files\core</Filter>
     </ClInclude>
     <ClInclude Include="includes\core\navigation.h">
+      <Filter>Header Files\core</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\ui\progressBar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\core\threadManager.h">
       <Filter>Header Files\core</Filter>
     </ClInclude>
   </ItemGroup>

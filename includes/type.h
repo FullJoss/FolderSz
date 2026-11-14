@@ -11,6 +11,7 @@
 
 typedef void (*Callback) (HWND, void*);
 typedef int (*CallbackSort) (const void*, const void*, BOOL isAscending);
+typedef HANDLE WakeHandle;
 
 typedef struct
 {
@@ -116,3 +117,17 @@ typedef struct
     int width;
     int height;
 } WindowDataInformation;
+
+typedef enum {
+    THRD_TASK_IDLE,
+    THRD_TASK_SCAN,
+    THRD_TASK_CLEAN,
+    THRD_TASK_EXIT
+} ThrdTask;
+
+typedef struct {
+    HANDLE hEvent;
+    void* arg;
+    ThrdTask task;
+    BOOL isBusy;
+} ThrdWorker;

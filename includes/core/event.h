@@ -11,7 +11,7 @@
 #include "wnd.h"
 #include "type.h"
 
-extern volatile BOOL thrd_scanner_isRun;
+extern ThrdWorker g_worker;
 
 void LaunchChoiceExplorer(HWND, WindowDataInformation*);
 void OpenDialogFolder(HWND, WindowDataInformation*);

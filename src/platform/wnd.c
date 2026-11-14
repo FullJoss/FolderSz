@@ -17,6 +17,7 @@
 #include "backend.h"
 #include "layout.h"
 #include "progressBar.h"
+#include "threadManager.h"
 
 int DPI_VALUE = 96;
 
@@ -257,6 +258,8 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         g_fontHeight = GetFontHeightDPI(hwnd, g_font);
         UpdateDPIListView();
 
+        CreateWorker(&g_worker);
+
         return 0;
     }
 
@@ -349,7 +352,10 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
     case WM_DESTROY:
     {
-        SaveCache();
+        BOOL scan_finished = !g_worker.isBusy || g_worker.task != THRD_TASK_SCAN;
+        if (scan_finished) {
+            SaveCache();
+        }
         FreeDoubleBuffering();
         PostQuitMessage(0);
         return 0;

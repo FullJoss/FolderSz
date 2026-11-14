@@ -11,11 +11,11 @@
 #include "list_view.h"
 #include "dialog.h"
 #include "choice_explorer.h"
+#include "threadManager.h"
 
 static wchar_t m_current_path[MAX_PATH] = { 0 };
 BOOL g_TriCroissant = FALSE;
-volatile BOOL thrd_scanner_isRun = FALSE;
-static HANDLE thrd_scanner_h = NULL;
+ThrdWorker g_worker;
 
 static void LaunchThreadScanner(ListFile* lf, wchar_t* path);
 
@@ -29,9 +29,7 @@ void OpenDialogFolder(HWND hwnd, WindowDataInformation* pData)
 
 void LaunchChoiceExplorer(HWND hwnd, WindowDataInformation* pData) {
     if (CreateChoiceExplorer(hwnd, m_current_path, MAX_PATH))
-    {
         StartScanFolder(hwnd, m_current_path, pData->lfv);
-    }
     else
         MessageBox_View(L"No Windows Explorer windows are open.");
 }
@@ -75,7 +73,7 @@ int CompareBySize(const void* a, const void* b, BOOL isAscending)
 
 
 void StartScanFolder(HWND hwnd, wchar_t* path, ListFileView* lfv) {
-    if (thrd_scanner_isRun) {
+    if (g_worker.isBusy) {
         MessageBox_View(L"Please, wait for the last operation to complete");
         return;
     }
@@ -91,24 +89,6 @@ static void LaunchThreadScanner(ListFile* lf, wchar_t* path) {
     static ScanArg scanData;
     scanData.lf = lf;
     scanData.path = path;
-    scanData.pthrd_isRun = &thrd_scanner_isRun;
 
-    thrd_scanner_isRun = TRUE;
-    unsigned threadId;
-    thrd_scanner_h = (HANDLE)_beginthreadex(
-        NULL,
-        0,
-        &AsyncScanFolders,
-        &scanData,
-        0,
-        &threadId
-    );
-
-    if (thrd_scanner_h != NULL)
-    {
-        CloseHandle(thrd_scanner_h);
-    }
-    else {
-        thrd_scanner_isRun = FALSE;
-    }
+    WakeWorker(&g_worker, THRD_TASK_SCAN, &scanData);
 }

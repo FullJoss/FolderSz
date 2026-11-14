@@ -88,7 +88,7 @@ static BOOL ManageMaxCapacity()
 
 
 
-unsigned __stdcall AsyncScanFolders(void* arg) {
+void AsyncScanFolders(void* arg) {
     ScanArg* param = (ScanArg*)arg;
     ListFile* lf = param->lf;
     wchar_t* path = param->path;
@@ -102,10 +102,6 @@ unsigned __stdcall AsyncScanFolders(void* arg) {
             RemoveFlagsElement(element, ElementDirWithoutSize);
         }
     }
-
-    (*param->pthrd_isRun) = FALSE;
-    _endthreadex(0);
-    return 0;
 }
 
 ListFile* ScanFilePath(const wchar_t *dossierPath)
