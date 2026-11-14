@@ -11,8 +11,6 @@ void CreateWorker(ThrdWorker* wrk) {
 
     HANDLE h = (HANDLE)_beginthreadex(NULL, 0, Worker_MainTask, wrk, 0, NULL);
     if (h) CloseHandle(h);
-    
-    return wrk;
 }
 
 static unsigned __stdcall Worker_MainTask(void* arg) {

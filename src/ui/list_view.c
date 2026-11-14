@@ -301,7 +301,7 @@ void UpdateDPIListView() {
     SCROLLBAR_WIDTH = DPI_CONST(11);
 }
 
-void UpdateListFileView(HWND hwnd, ListFileView* lfv, ListFile* newlist, BOOL sort)
+void UpdateListFileView(HWND hwnd, ListFileView* lfv, FileVec* newlist, BOOL sort)
 {
     ResetValue(lfv);
 
@@ -312,7 +312,7 @@ void UpdateListFileView(HWND hwnd, ListFileView* lfv, ListFile* newlist, BOOL so
     }
     else if (newlist) {
 
-        lfv->rows = newlist->files;
+        lfv->rows = newlist->data;
         lfv->n_rows = nb_elem;
 
         CalculateItemsArea(lfv);

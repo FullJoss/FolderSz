@@ -8,12 +8,13 @@
 
 #pragma once
 #include "type.h"
+#include "vector.h"
 
 #define MAX_LISTVIEW_ELEMENT 5
 
 typedef struct {
     wchar_t* path;
-    ListFile* lf;
+    FileVec* lf;
 } ScanArg;
 
 extern wchar_t *current_path;
@@ -22,7 +23,7 @@ wchar_t *LoadFolderDialog();
 
 void AsyncScanFolders(void* arg);
 
-ListFile* ScanFilePath(const wchar_t *dossierPath);
+FileVec* ScanFilePath(const wchar_t *dossierPath);
 
 void OnDoubleClickRow(HWND hwnd, ListFileView* lfv);
 

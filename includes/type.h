@@ -67,12 +67,6 @@ typedef struct
 } ElementFile;
 
 typedef struct {
-    ElementFile* files;
-    unsigned int count;
-    unsigned int capacity;
-} ListFile;
-
-typedef struct {
     RECT bounds;
     RECT itemsArea;
     RECT sbTrack;

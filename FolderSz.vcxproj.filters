@@ -87,6 +87,9 @@
     <ClCompile Include="src\core\threadManager.c">
       <Filter>Source Files\core</Filter>
     </ClCompile>
+    <ClCompile Include="src\core\vector.c">
+      <Filter>Source Files\core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
@@ -144,6 +147,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="includes\core\threadManager.h">
+      <Filter>Header Files\core</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\core\vector.h">
       <Filter>Header Files\core</Filter>
     </ClInclude>
   </ItemGroup>

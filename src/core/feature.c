@@ -16,8 +16,6 @@
 
 wchar_t *current_path = NULL;
 
-static ListFile listFile = { NULL, 0, 0 };
-
 static inline void PushData(wchar_t* pathElement, ElementFile* element, WIN32_FIND_DATAW* data);
 static inline void AttachIcon(ElementFile* element, wchar_t* path, SHFILEINFOW* sfiFile, WIN32_FIND_DATAW* data);
 static BOOL FilterSpecificPath(const wchar_t* path);
@@ -57,45 +55,17 @@ wchar_t *LoadFolderDialog()
     return value;
 }
 
-static BOOL ManageMaxCapacity()
-{
-    int capacity = listFile.capacity;
-    int count = listFile.count;
-
-    if (capacity < count || capacity == 0)
-    {
-        capacity = 2 * capacity + 1;
-
-        ElementFile *tmp = (ElementFile *)realloc(listFile.files, capacity * sizeof(ElementFile));
-
-        if (tmp == NULL)
-        {
-            listFile.capacity = 0;
-
-            if (listFile.files) 
-                free(listFile.files);
-
-            perror("listFile allocation failed!");
-            return FALSE;
-        }
-
-        listFile.files = tmp;
-        listFile.capacity = capacity;
-    }
-    return TRUE;
-}
-
 
 
 
 void AsyncScanFolders(void* arg) {
     ScanArg* param = (ScanArg*)arg;
-    ListFile* lf = param->lf;
+    FileVec* lf = param->lf;
     wchar_t* path = param->path;
 
     wchar_t completePath[MAX_PATH];
     for (size_t i = 0; i < lf->count; i++) {
-        ElementFile* element = lf->files + i;
+        ElementFile* element = lf->data + i;
         if (element->flags & ElementDirWithoutSize) {
             PathCombineW(completePath, path, element->name);
             element->size = SearchFolderSize(completePath, element->lastUpdate);
@@ -104,11 +74,11 @@ void AsyncScanFolders(void* arg) {
     }
 }
 
-ListFile* ScanFilePath(const wchar_t *dossierPath)
+FileVec* ScanFilePath(const wchar_t *dossierPath)
 {
     HCURSOR hOldCursor = ChangeCursor();
 
-    listFile.count = 0;
+    static FileVec listFile = { 0 };
 
     wchar_t masque[MAX_PATH];
     swprintf_s(masque, MAX_PATH, L"%s\\*", dossierPath);
@@ -131,11 +101,8 @@ ListFile* ScanFilePath(const wchar_t *dossierPath)
                 continue;
             }
 
-            listFile.count++;
-            if (!ManageMaxCapacity())
-                break;
-
-            ElementFile* element = &listFile.files[listFile.count - 1];
+            VecGrow(&listFile);
+            ElementFile* element = VecLast(&listFile);
             
             element->flags = ElementInvalid;
             element->size = 0;

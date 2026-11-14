@@ -10,6 +10,7 @@
 #include "pch.h"
 #include "type.h"
 #include "feature.h"
+#include "vector.h"
 
 void DrawListFileView(HDC hdc, ListFileView* lfv, RECT rcPaint);
 void HandleListViewLButtonUp(HWND hWnd, ListFileView* listView);
@@ -18,7 +19,7 @@ void HandleListViewMouseMove(HWND hWnd, int x, int y, ListFileView* listView);
 void HandleListViewLButtonDown(HWND hWnd, int x, int y, ListFileView* listView);
 void HandleListViewMouseWheel(HWND hWnd, int wheelDelta, LPARAM lParam, ListFileView* listView);
 void HandleListViewKeyDown(HWND hwnd, WPARAM wParam, ListFileView* lfv);
-void UpdateListFileView(HWND hwnd, ListFileView* lfv, ListFile* newlist, BOOL sort);
+void UpdateListFileView(HWND hwnd, ListFileView* lfv, FileVec* newlist, BOOL sort);
 void FreeListFileView(ListFileView* lfv);
 void UpdateDPIListView();
 void UpdateListViewWidthColumn(ListFileView* lfv);
