@@ -725,11 +725,12 @@ static inline RECT GetThumbRect(ListFileView* lfv) {
 }
 
 static inline void SortListFileView(ListFileView* lfv) {
+    lfv->ascendingSort = !lfv->ascendingSort;
+    if (lfv->n_rows == 0) return;
+
     lfv->scrollPos = 0;
     ColumnListView* col = lfv->columns + lfv->indexColSort;
     CustomSort(lfv->rows, lfv->n_rows, lfv->row_size, col->FuncComparison, lfv->ascendingSort);
-
-    lfv->ascendingSort = !lfv->ascendingSort;
 }
 
 static void CustomSort(void* tab, size_t nb, size_t sizeElem, CallbackSort funcSort, BOOL isAscending) {
