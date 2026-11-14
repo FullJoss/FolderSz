@@ -13,6 +13,9 @@ static inline void ExploreOrExecute(HWND hwnd, ElementFile* elem, wchar_t* buffe
 
 void OnDoubleClickRow(HWND hwnd, ListFileView* lfv) {
 
+    if (lfv->indexRowSelect >= lfv->n_rows || lfv->indexRowSelect < 0)
+        return;
+
     ElementFile* elem = (ElementFile*)lfv->rows + lfv->indexRowSelect;
 
     if (elem->flags & (ElementCache | ElementPartition)) {
