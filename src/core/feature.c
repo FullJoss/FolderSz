@@ -79,6 +79,7 @@ FileVec* ScanFilePath(const wchar_t *dossierPath)
     HCURSOR hOldCursor = ChangeCursor();
 
     static FileVec listFile = { 0 };
+    listFile.count = 0;
 
     wchar_t masque[MAX_PATH];
     swprintf_s(masque, MAX_PATH, L"%s\\*", dossierPath);
