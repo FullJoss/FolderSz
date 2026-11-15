@@ -13,6 +13,12 @@ typedef void (*Callback) (HWND, void*);
 typedef int (*CallbackSort) (const void*, const void*, BOOL isAscending);
 typedef HANDLE WakeHandle;
 
+#define Vec(T) struct { \
+    T*     data;        \
+    size_t count;       \
+    size_t capacity;    \
+}
+
 typedef struct
 {
     RECT bounds;
@@ -66,6 +72,13 @@ typedef struct
     int indexIcon;
 } ElementFile;
 
+
+typedef Vec(ElementFile)  FileVec;
+typedef Vec(ElementFile*) FilePtrVec;
+typedef Vec(int)          IntVec;
+typedef Vec(void*)        PtrVec;
+
+
 typedef struct {
     RECT bounds;
     RECT itemsArea;
@@ -73,6 +86,7 @@ typedef struct {
     RECT headRect;
 
     HRGN clipRgn;
+    PtrVec sortedRows;
     ColumnListView* columns;
     void* rows;
     size_t row_size;
@@ -125,3 +139,10 @@ typedef struct {
     ThrdTask task;
     BOOL isBusy;
 } ThrdWorker;
+
+
+
+
+
+
+

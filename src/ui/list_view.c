@@ -53,14 +53,14 @@ static inline void CalculateTrackThumb(ListFileView* lfv);
 static inline RECT GetThumbRect(ListFileView* lfv);
 static inline void SortListFileView(ListFileView* lfv);
 static inline int GetNewScrollPos(int ymouse, ListFileView* lfv);
-static void CustomSort(void* tab, size_t nb, size_t sizeElem, CallbackSort funcSort, BOOL isAscending);
+static void CustomSort(PtrVec* tab, size_t nb, size_t sizeElem, CallbackSort funcSort, BOOL isAscending);
 static inline int FindIndexHeaderTitle(int x, int initial, ColumnListView* col, int nCol);
 void DrawSortArrow(HDC hdc, RECT rcColumn, BOOL isAscending);
 static void ResetValue(ListFileView* lfv);
 static inline void GetIconSize(int* out);
 static RECT GetHeadRect(RECT* bounds);
 static inline BOOL MouseHandleColumn(HWND hwnd, ListFileView* lfv, POINT mouse);
-
+static inline void CopyRawToVec(void* raw, size_t n, PtrVec* vec, size_t sizeElement);
 
 
 
@@ -78,13 +78,15 @@ void DrawListFileView(HDC hdc, ListFileView* lfv, RECT rcPaint) {
     FillRect(hdc, &lfv->bounds, g_brushs[IC_LV_BACKGROUND]);
 
     SetBkMode(hdc, TRANSPARENT);
+    
+    void** rows = lfv->sortedRows.data;
+    size_t nb_row = lfv->sortedRows.count;
 
-    void *rows = lfv->rows;
-    if (rows && lfv->n_rows > 0)
+    if (rows && nb_row > 0)
     {
         const RECT itemsArea = lfv->itemsArea;
 
-        int totalContentHeight = lfv->n_rows * ROW_HEIGHT;
+        int totalContentHeight = nb_row * ROW_HEIGHT;
         int viewHeight = RectHeight(&itemsArea);
 
         RECT rowBounds = { 0 };
@@ -97,7 +99,7 @@ void DrawListFileView(HDC hdc, ListFileView* lfv, RECT rcPaint) {
 
             rowBounds = GetNextRowBounds(i, lfv->scrollPos, itemsArea);
 
-            void* row = ((char*)rows) + (i * lfv->row_size);
+            void* row = rows[i];
 
             if (rowBounds.bottom < itemsArea.top) continue;
             if (rowBounds.top > itemsArea.bottom) break;
@@ -159,6 +161,7 @@ void HandleListViewLButtonDown(HWND hWnd, int x, int y, ListFileView* lfv) {
         
         lfv->indexColSort = i;
 
+        lfv->ascendingSort = !lfv->ascendingSort;
         SortListFileView(lfv);
 
         InvalidateRect(hWnd, &lfv->bounds, FALSE);
@@ -319,9 +322,12 @@ void UpdateListFileView(HWND hwnd, ListFileView* lfv, FileVec* newlist, BOOL sor
 
         CalculateTrackThumb(lfv);
 
-        if (sort) SortListFileView(lfv);
+        if (sort) {
+            SortListFileView(lfv);
+        }
         else {
             lfv->scrollPos = lfv->maxScrollPos;
+            lfv->indexColSort = -1;
         }
 
         CalculateClipRegion(lfv);
@@ -725,28 +731,25 @@ static inline RECT GetThumbRect(ListFileView* lfv) {
 }
 
 static inline void SortListFileView(ListFileView* lfv) {
-    lfv->ascendingSort = !lfv->ascendingSort;
     if (lfv->n_rows == 0) return;
 
     lfv->scrollPos = 0;
     ColumnListView* col = lfv->columns + lfv->indexColSort;
-    CustomSort(lfv->rows, lfv->n_rows, lfv->row_size, col->FuncComparison, lfv->ascendingSort);
+
+    CopyRawToVec(lfv->rows, lfv->n_rows, &lfv->sortedRows, lfv->row_size);
+    CustomSort(&lfv->sortedRows, lfv->n_rows, lfv->row_size, col->FuncComparison, lfv->ascendingSort);
 }
 
-static void CustomSort(void* tab, size_t nb, size_t sizeElem, CallbackSort funcSort, BOOL isAscending) {
-    
-    void* temp = malloc(sizeElem);
-    if (!temp) return;
+static void CustomSort(PtrVec* tab, size_t nb, size_t sizeElem, CallbackSort funcSort, BOOL isAscending) {
     
     for (size_t i = 0; i < nb - 1; i++) {
 
-        void* tab_i = (char*)tab + i * sizeElem;
-
         size_t targetI = i;
+
         for (size_t j = i + 1; j < nb; j++) {
 
-            void* tab_tI = (char*)tab + targetI * sizeElem;
-            void* tab_j = (char*)tab + j * sizeElem;
+            void* tab_tI = tab->data[targetI];
+            void* tab_j = tab->data[j];
 
             int valueComparison = funcSort(tab_j, tab_tI, isAscending);
 
@@ -756,15 +759,11 @@ static void CustomSort(void* tab, size_t nb, size_t sizeElem, CallbackSort funcS
         }
         
         if (targetI != i) {
-            void* tab_target = (char*)tab + targetI * sizeElem;
-
-            memcpy(temp, tab_i, sizeElem);
-            memcpy(tab_i, tab_target, sizeElem);
-            memcpy(tab_target, temp, sizeElem);
+            void* temp = tab->data[i];
+            tab->data[i] = tab->data[targetI];
+            tab->data[targetI] = temp;
         }
     }
-
-    free(temp);
 }
 
 
@@ -813,5 +812,14 @@ static inline void GetIconSize(int* out) {
 
     if (ImageList_GetIconSize(g_systemImageList, &width, &height)) {
         *out = height;
+    }
+}
+
+static inline void CopyRawToVec(void* raw, size_t n, PtrVec* vec, size_t sizeElement) {
+    vec->count = n;
+    VecUpdateCapacity(vec, n);
+
+    for (size_t i = 0; i < n; i++) {
+        vec->data[i] = (char*)raw + i * sizeElement;
     }
 }

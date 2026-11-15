@@ -3,16 +3,17 @@
 #include "pch.h"
 #include "type.h"
 
-// La macro à utiliser directement dans vos typedef !
-#define Vec(T) struct { \
-    T*     data;        \
-    size_t count;       \
-    size_t capacity;    \
-}
-
-typedef Vec(ElementFile)  FileVec;
-typedef Vec(ElementFile*) FilePtrVec;
-typedef Vec(int)          IntVec;
+#define VecUpdateCapacity(v, new_cap) do {                                    \
+    if ((new_cap) >= (v)->capacity) {                                         \
+        void* tmp = realloc((v)->data, (new_cap) * sizeof(*(v)->data));       \
+        if (!tmp) {                                                           \
+            perror("Erreur realloc dans VecGrow");                            \
+            abort();                                                          \
+        }                                                                     \
+        (v)->data = tmp;                                                      \
+        (v)->capacity = (new_cap);                                            \
+    }                                                                         \
+} while (0)
 
 #define VecGrow(v) do {                                                       \
     if ((v)->count >= (v)->capacity) {                                        \
