@@ -366,7 +366,7 @@ static void SelectRowWithKey(HWND hwnd, WPARAM wParam, ListFileView* lfv) {
         break;
     }
     case VK_BACK: {
-        ElementFile* elem = (ElementFile*)lfv->rows;
+        ElementFile* elem = (ElementFile*)lfv->sortedRows.data[0];
         if (elem->flags & ElementParentDirectory) {
             lfv->indexRowSelect = 0;
             lfv->OnDoubleClickRow(hwnd, lfv);
@@ -415,14 +415,16 @@ static void SelectRowWithKey(HWND hwnd, WPARAM wParam, ListFileView* lfv) {
 
 static void FindRowWithKey(HWND hwnd, wchar_t key, ListFileView* lfv) {
     int iSelect = lfv->indexRowSelect;
-    int iLimit = lfv->n_rows;
+    int iLimit = lfv->sortedRows.count;
+
+    BOOL isFound = FALSE;
 
     if (iSelect < 0 || iSelect >= iLimit)
         return;
 
     int iNext = (iSelect + 1) % iLimit;
     for (iNext; iNext != iSelect; iNext = (iNext + 1) % iLimit) {
-        ElementFile* file = (ElementFile*)lfv->rows + iNext;
+        ElementFile* file = lfv->sortedRows.data[iNext];
         wchar_t letterName = file->name[0];
 
         if (letterName == key || letterName - 32 == key) {
@@ -436,11 +438,15 @@ static void FindRowWithKey(HWND hwnd, wchar_t key, ListFileView* lfv) {
 
             lfv->scrollPos = newScrollPos;
             InvalidateRect(hwnd, &lfv->bounds, FALSE);
-            return;
+            
+            isFound = TRUE;
+            break;
         }
     }
 
-    MessageBeep(MB_ICONHAND);
+    if (!isFound) {
+        MessageBeep(MB_ICONHAND);
+    }
 }
 
 static void SelectItem(HWND hWnd, ListFileView* lfv, int y) {
