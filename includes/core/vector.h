@@ -18,13 +18,7 @@
 #define VecGrow(v) do {                                                       \
     if ((v)->count >= (v)->capacity) {                                        \
         size_t new_cap = (v)->capacity ? (v)->capacity * 2 : 16;              \
-        void* tmp = realloc((v)->data, new_cap * sizeof(*(v)->data));         \
-        if (!tmp) {                                                           \
-            perror("Erreur realloc dans VecGrow");                            \
-            abort();                                                          \
-        }                                                                     \
-        (v)->data = tmp;                                                      \
-        (v)->capacity = new_cap;                                              \
+        VecUpdateCapacity(v, new_cap);                                        \
     }                                                                         \
     (v)->count++;                                                             \
 } while (0)

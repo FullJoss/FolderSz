@@ -86,7 +86,7 @@ void DrawListFileView(HDC hdc, ListFileView* lfv, RECT rcPaint) {
     {
         const RECT itemsArea = lfv->itemsArea;
 
-        int totalContentHeight = nb_row * ROW_HEIGHT;
+        int totalContentHeight = (int)nb_row * ROW_HEIGHT;
         int viewHeight = RectHeight(&itemsArea);
 
         RECT rowBounds = { 0 };
@@ -308,7 +308,7 @@ void UpdateListFileView(HWND hwnd, ListFileView* lfv, FileVec* newlist, BOOL sor
 {
     ResetValue(lfv);
 
-    unsigned nb_elem = newlist->count;
+    unsigned nb_elem = (unsigned)newlist->count;
 
     if (nb_elem <= 0) {
         lfv->n_rows = 0;
@@ -415,7 +415,7 @@ static void SelectRowWithKey(HWND hwnd, WPARAM wParam, ListFileView* lfv) {
 
 static void FindRowWithKey(HWND hwnd, wchar_t key, ListFileView* lfv) {
     int iSelect = lfv->indexRowSelect;
-    int iLimit = lfv->sortedRows.count;
+    size_t iLimit = lfv->sortedRows.count;
 
     BOOL isFound = FALSE;
 

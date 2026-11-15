@@ -13,7 +13,7 @@ static inline void ExploreOrExecute(HWND hwnd, ElementFile* elem, wchar_t* buffe
 
 void OnDoubleClickRow(HWND hwnd, ListFileView* lfv) {
 
-    if (lfv->indexRowSelect >= lfv->n_rows || lfv->indexRowSelect < 0)
+    if (lfv->indexRowSelect < 0 || (unsigned)lfv->indexRowSelect >= lfv->n_rows)
         return;
 
     ElementFile* elem = lfv->sortedRows.data[lfv->indexRowSelect];

@@ -11,7 +11,6 @@
 
 typedef void (*Callback) (HWND, void*);
 typedef int (*CallbackSort) (const void*, const void*, BOOL isAscending);
-typedef HANDLE WakeHandle;
 
 #define Vec(T) struct { \
     T*     data;        \
