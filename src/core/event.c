@@ -17,7 +17,7 @@ static wchar_t m_current_path[MAX_PATH] = { 0 };
 BOOL g_TriCroissant = FALSE;
 ThrdWorker g_worker;
 
-static void LaunchThreadScanner(FileVec* lf, wchar_t* path);
+static void LaunchThreadScanner(HWND hwnd, FileVec* lf, wchar_t* path);
 
 void OpenDialogFolder(HWND hwnd, WindowDataInformation* pData)
 {
@@ -82,11 +82,12 @@ void StartScanFolder(HWND hwnd, wchar_t* path, ListFileView* lfv) {
     FileVec* lf = ScanFilePath(path);
     UpdateListFileView(hwnd, lfv, lf, TRUE);
 
-    LaunchThreadScanner(lf, path);
+    LaunchThreadScanner(hwnd, lf, path);
 }
 
-static void LaunchThreadScanner(FileVec* lf, wchar_t* path) {
-    static ScanArg scanData;
+static void LaunchThreadScanner(HWND hwnd, FileVec* lf, wchar_t* path) {
+    static ScanArg scanData = { 0 };
+    scanData.hwnd = hwnd;
     scanData.lf = lf;
     scanData.path = path;
 

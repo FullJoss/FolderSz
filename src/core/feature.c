@@ -71,7 +71,9 @@ void AsyncScanFolders(void* arg) {
             element->size = SearchFolderSize(completePath, element->lastUpdate);
             RemoveFlagsElement(element, ElementDirWithoutSize);
         }
+        InvalidateRect(param->hwnd, NULL, FALSE);
     }
+
 }
 
 FileVec* ScanFilePath(const wchar_t *dossierPath)

@@ -13,6 +13,7 @@
 #define MAX_LISTVIEW_ELEMENT 5
 
 typedef struct {
+    HWND hwnd;
     wchar_t* path;
     FileVec* lf;
 } ScanArg;
