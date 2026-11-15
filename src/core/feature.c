@@ -70,8 +70,8 @@ void AsyncScanFolders(void* arg) {
             PathCombineW(completePath, path, element->name);
             element->size = SearchFolderSize(completePath, element->lastUpdate);
             RemoveFlagsElement(element, ElementDirWithoutSize);
+            InvalidateRect(param->hwnd, NULL, FALSE);
         }
-        InvalidateRect(param->hwnd, NULL, FALSE);
     }
 
 }

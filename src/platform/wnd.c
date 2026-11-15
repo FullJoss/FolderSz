@@ -183,7 +183,16 @@ static inline int OnPaint(HWND hwnd, WindowDataInformation* window_info) {
 
     DrawListFileView(hdcMem, window_info->lfv, ps.rcPaint);
 
-    PaintProgressBar(hdcMem, window_info->progressBar);
+    const RECT* pPrBrBounds = &window_info->progressBar->bounds;
+    if (g_worker.isBusy) {
+        if (g_worker.task == THRD_TASK_SCAN) {
+            SetTextColor(hdcMem, g_colors[IC_TEXT]);
+            DrawTextW(hdcMem, L"Scan loading ...", -1, pPrBrBounds, DT_CENTER | DT_VCENTER);
+        }
+    }
+    else {
+        PaintProgressBar(hdcMem, window_info->progressBar);
+    }
 
     for (int i = 0; i < window_info->n_buttons; i++)
         ButtonDraw(hdcMem, window_info->buttons + i);
